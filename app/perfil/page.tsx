@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -9,7 +9,6 @@ export default function Perfil() {
   const [loading, setLoading] = useState(false);
   const [foto, setFoto] = useState<File | null>(null);
   
-  // Campos do formulário
   const [nome, setNome] = useState('');
   const [idade, setIdade] = useState('');
   const [genero, setGenero] = useState('');
@@ -23,34 +22,32 @@ export default function Perfil() {
     setLoading(true);
 
     try {
-      // 1. Pega o usuário logado atualmente
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não está logado!');
 
       let foto_url = '';
 
-      // 2. Faz o upload da foto se ela existir
       if (foto) {
+        // 1. Gera um nome de arquivo limpo e único
         const fileExt = foto.name.split('.').pop();
-        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
 
+        // 2. Upload para o bucket
         const { error: uploadError } = await supabase.storage
           .from('fotos')
           .upload(fileName, foto);
 
         if (uploadError) throw uploadError;
 
-        // Pega o link público da foto
-        const { data: publicUrlData } = supabase.storage
-          .from('fotos')
-          .getPublicUrl(fileName);
-          
-        foto_url = publicUrlData.publicUrl;
+        // 3. CONSTRUÇÃO DIRETA DO LINK (Troque SEU_ID_DO_SUPABASE pelo seu ID real)
+        // Exemplo: https://abcde12345.supabase.co
+        const SUPABASE_PROJECT_ID = 'pelofnnecqpuxjwxbxhm'; 
+        foto_url = `https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/fotos/${fileName}`;
+
       } else {
         throw new Error('A foto de perfil é obrigatória para a festa!');
       }
 
-      // 3. Salva os dados no banco
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
@@ -67,9 +64,7 @@ export default function Perfil() {
 
       if (profileError) throw profileError;
 
-      alert('Perfil criado com sucesso! Partiu matches 🔥');
-      // Redireciona para a tela principal (que faremos depois)
-      // router.push('/matches'); 
+      router.push('/matches?success=true');
 
     } catch (error: any) {
       alert('Erro: ' + error.message);
@@ -79,17 +74,15 @@ export default function Perfil() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center py-10 bg-orange-50 px-4">
+    <main className="flex min-h-screen flex-col items-center py-10 bg-orange-50 px-4 text-black">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-8 border-t-4 border-purple-600">
-        <h1 className="text-3xl font-bold text-orange-600 mb-6 text-center">
-          Monte seu Perfil
-        </h1>
+        <h1 className="text-3xl font-bold text-orange-600 mb-2 text-center italic uppercase">Match Med 🏥</h1>
+        <p className="text-center text-gray-500 mb-6 font-medium text-sm">Monte seu perfil para a festa</p>
 
-        <form onSubmit={handleSalvarPerfil} className="flex flex-col gap-5 text-black">
+        <form onSubmit={handleSalvarPerfil} className="flex flex-col gap-5">
           
-          {/* FOTO */}
           <div>
-            <label className="block text-sm font-medium text-purple-700 mb-1">Foto de Perfil (Obrigatória) 📸</label>
+            <label className="block text-sm font-bold text-purple-700 mb-1">Sua melhor foto (Obrigatória) 📸</label>
             <input 
               type="file" 
               accept="image/*"
@@ -99,26 +92,24 @@ export default function Perfil() {
             />
           </div>
 
-          {/* NOME E IDADE */}
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-purple-700 mb-1">Nome</label>
+              <label className="block text-sm font-bold text-purple-700 mb-1">Nome</label>
               <input type="text" required value={nome} onChange={(e) => setNome(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500" placeholder="Nome viu? (apelido também vale)" />
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Ex: Janiel Jr" />
             </div>
             <div className="w-24">
-              <label className="block text-sm font-medium text-purple-700 mb-1">Idade</label>
+              <label className="block text-sm font-bold text-purple-700 mb-1">Idade</label>
               <input type="number" required value={idade} onChange={(e) => setIdade(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500" placeholder="Ex: 22" />
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="22" />
             </div>
           </div>
 
-          {/* GÊNERO E SEXUALIDADE */}
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-purple-700 mb-1">Gênero</label>
+              <label className="block text-sm font-bold text-purple-700 mb-1">Gênero</label>
               <select required value={genero} onChange={(e) => setGenero(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white">
                 <option value="">Selecione...</option>
                 <option value="Homem">Homem</option>
                 <option value="Mulher">Mulher</option>
@@ -126,9 +117,9 @@ export default function Perfil() {
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-purple-700 mb-1">Sexualidade</label>
+              <label className="block text-sm font-bold text-purple-700 mb-1">Sexualidade</label>
               <select required value={sexualidade} onChange={(e) => setSexualidade(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white">
                 <option value="">Selecione...</option>
                 <option value="Hétero">Hétero</option>
                 <option value="Bissexual">Bissexual</option>
@@ -138,29 +129,27 @@ export default function Perfil() {
             </div>
           </div>
 
-          {/* CHECKBOX SEXUALIDADE */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-purple-50 p-3 rounded-lg border border-purple-100">
             <input type="checkbox" id="mostrarSex" checked={mostrarSexualidade} onChange={(e) => setMostrarSexualidade(e.target.checked)}
               className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500" />
-            <label htmlFor="mostrarSex" className="text-sm text-gray-600">Mostrar minha sexualidade no perfil</label>
+            <label htmlFor="mostrarSex" className="text-sm text-purple-800 font-medium">Exibir minha sexualidade no perfil</label>
           </div>
 
-          {/* CURSO / INSTAGRAM */}
           <div>
-            <label className="block text-sm font-medium text-purple-700 mb-1">Faculdade / Atlética / Curso</label>
+            <label className="block text-sm font-bold text-purple-700 mb-1">Faculdade / Curso / Atlética</label>
             <input type="text" required value={curso} onChange={(e) => setCurso(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500" placeholder="Ex: Medicina UFC Sobral" />
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Ex: Medicina UFC Sobral" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-purple-700 mb-1">Instagram (Opcional)</label>
+            <label className="block text-sm font-bold text-purple-700 mb-1">Instagram (@)</label>
             <input type="text" value={instagram} onChange={(e) => setInstagram(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500" placeholder="Coloque seu @" />
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Ex: @janieljr" />
           </div>
 
           <button type="submit" disabled={loading}
-            className="w-full bg-purple-600 text-white font-bold py-3 rounded-lg hover:bg-purple-700 transition-colors mt-4 shadow-md">
-            {loading ? 'Salvando...' : 'Salvar Perfil'}
+            className="w-full bg-purple-600 text-white font-black py-4 rounded-xl hover:bg-purple-700 transition-all mt-4 shadow-lg active:scale-95 uppercase">
+            {loading ? 'Salvando...' : 'Salvar Perfil e Começar 🔥'}
           </button>
         </form>
       </div>

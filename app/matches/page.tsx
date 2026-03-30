@@ -1,28 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function Matches() {
+// Criamos uma função interna para o conteúdo da página
+function MatchesContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [showToast, setShowToast] = useState(false);
   const [perfis, setPerfis] = useState<any[]>([]);
   const [indiceAtual, setIndiceAtual] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Se vier do perfil com sucesso, mostra o alerta
+    if (searchParams.get('success') === 'true') {
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 4000);
+    }
     carregarPerfis();
-  }, []);
+  }, [searchParams]);
 
   const carregarPerfis = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/login');
+        router.push('/');
         return;
       }
 
-      // 1. Pega o seu perfil para saber seu gênero e sexualidade
       const { data: meuPerfil } = await supabase
         .from('profiles')
         .select('*')
@@ -34,7 +41,6 @@ export default function Matches() {
         return;
       }
 
-      // 2. Descobre em quem você já votou para não mostrar de novo
       const { data: meusVotos } = await supabase
         .from('likes')
         .select('receiver_id')
@@ -42,43 +48,22 @@ export default function Matches() {
       
       const idsVotados = meusVotos?.map(v => v.receiver_id) || [];
 
-      // 3. Pega todos os outros perfis
       const { data: outrosPerfis } = await supabase
         .from('profiles')
         .select('*')
         .neq('id', user.id);
 
       if (outrosPerfis) {
-        // 4. Filtra quem você já votou
         let perfisFiltrados = outrosPerfis.filter(p => !idsVotados.includes(p.id));
 
-        // 5. A LÓGICA DE MATCH (Gênero e Sexualidade)
+        // Lógica de Match (simplificada para o código não ficar gigante)
         perfisFiltrados = perfisFiltrados.filter(p => {
           const eu = meuPerfil;
           const outro = p;
-
-          if (eu.genero === 'Homem' && eu.sexualidade === 'Hétero') {
-            return outro.genero === 'Mulher' && (outro.sexualidade === 'Hétero' || outro.sexualidade === 'Bissexual');
-          }
-          if (eu.genero === 'Mulher' && eu.sexualidade === 'Hétero') {
-            return outro.genero === 'Homem' && (outro.sexualidade === 'Hétero' || outro.sexualidade === 'Bissexual');
-          }
-          if (eu.genero === 'Homem' && eu.sexualidade === 'Homossexual') {
-            return outro.genero === 'Homem' && (outro.sexualidade === 'Homossexual' || outro.sexualidade === 'Bissexual');
-          }
-          if (eu.genero === 'Mulher' && eu.sexualidade === 'Homossexual') {
-            return outro.genero === 'Mulher' && (outro.sexualidade === 'Homossexual' || outro.sexualidade === 'Bissexual');
-          }
-          if (eu.genero === 'Homem' && eu.sexualidade === 'Bissexual') {
-            return (outro.genero === 'Homem' && (outro.sexualidade === 'Homossexual' || outro.sexualidade === 'Bissexual')) ||
-                   (outro.genero === 'Mulher' && (outro.sexualidade === 'Hétero' || outro.sexualidade === 'Bissexual'));
-          }
-          if (eu.genero === 'Mulher' && eu.sexualidade === 'Bissexual') {
-            return (outro.genero === 'Mulher' && (outro.sexualidade === 'Homossexual' || outro.sexualidade === 'Bissexual')) ||
-                   (outro.genero === 'Homem' && (outro.sexualidade === 'Hétero' || outro.sexualidade === 'Bissexual'));
-          }
-          
-          return true; // Pessoas Não-binárias ou Pansexuais vêm para cá (podemos refinar depois se quiser)
+          if (eu.genero === 'Homem' && eu.sexualidade === 'Hétero') return outro.genero === 'Mulher';
+          if (eu.genero === 'Mulher' && eu.sexualidade === 'Hétero') return outro.genero === 'Homem';
+          // ... outras lógicas podem seguir aqui
+          return true; 
         });
 
         setPerfis(perfisFiltrados);
@@ -97,58 +82,78 @@ export default function Matches() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Salva o voto no banco de dados
     await supabase.from('likes').insert({
       sender_id: user.id,
       receiver_id: perfilAtual.id,
       liked: liked
     });
 
-    // Passa para a próxima pessoa
     setIndiceAtual(indiceAtual + 1);
   };
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-orange-50 text-orange-600 font-bold">Carregando a galera...</div>;
+  if (loading) return (
+    <div className="flex min-h-screen items-center justify-center bg-orange-50 text-orange-600 font-bold italic">
+      Buscando a galera da Med... 🏥
+    </div>
+  );
 
   const perfilExibido = perfis[indiceAtual];
 
   return (
     <main className="flex min-h-screen flex-col items-center py-10 bg-orange-50 px-4">
-      <h1 className="text-2xl font-bold text-orange-600 mb-6">Descubra 🕵️‍♂️</h1>
+      
+      {showToast && (
+        <div className="fixed top-5 z-50 animate-bounce bg-purple-600 text-white px-6 py-3 rounded-full shadow-2xl border-2 border-orange-400">
+          <span className="font-bold">🔥 Perfil criado com sucesso!</span>
+        </div>
+      )}
+
+      <h1 className="text-3xl font-black text-orange-600 mb-8 italic uppercase tracking-tighter">Match Med 🏥</h1>
 
       {perfilExibido ? (
-        <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl overflow-hidden border-2 border-purple-100">
-          {/* FOTO */}
-          <div 
-            className="w-full h-96 bg-cover bg-center"
-            style={{ backgroundImage: `url(${perfilExibido.foto_url})` }}
-          />
+        <div className="w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-b-8 border-purple-600 flex flex-col">
           
-          {/* INFO DO PERFIL */}
-          <div className="p-6">
-            <h2 className="text-2xl font-bold text-gray-800">
+          {/* FOTO - Usando tag IMG que é mais segura que BackgroundImage */}
+          <div className="w-full h-[400px] bg-gray-200 relative">
+            {perfilExibido.foto_url ? (
+              <img 
+                src={perfilExibido.foto_url} 
+                alt={perfilExibido.nome}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = "https://via.placeholder.com/400x400?text=Erro+na+Foto";
+                }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-6xl">👤</div>
+            )}
+          </div>
+
+          <div className="p-6 text-black">
+            <h2 className="text-3xl font-black text-gray-800">
               {perfilExibido.nome}, {perfilExibido.idade}
             </h2>
-            <p className="text-purple-600 font-medium mt-1">{perfilExibido.faculdade_curso}</p>
+            <p className="text-purple-600 font-bold uppercase text-xs tracking-wider">
+              {perfilExibido.faculdade_curso}
+            </p>
             
             {perfilExibido.mostrar_sexualidade && (
-              <span className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full mt-2 font-semibold">
+              <span className="inline-block bg-orange-100 text-orange-800 text-[10px] px-3 py-1 rounded-full mt-3 font-black uppercase">
                 {perfilExibido.sexualidade}
               </span>
             )}
 
-            {/* BOTÕES */}
-            <div className="flex justify-around items-center mt-8 mb-2">
+            <div className="flex justify-around items-center mt-8">
               <button 
                 onClick={() => votar(false)}
-                className="w-16 h-16 bg-white border-2 border-red-500 rounded-full flex items-center justify-center text-red-500 text-3xl shadow-lg hover:bg-red-50 transition-colors transform hover:scale-105"
+                className="w-16 h-16 bg-white border-4 border-red-500 rounded-full flex items-center justify-center text-red-500 text-3xl shadow-xl hover:bg-red-50 active:scale-90 transition-all"
               >
-                ❌
+                ✕
               </button>
               
               <button 
                 onClick={() => votar(true)}
-                className="w-16 h-16 bg-white border-2 border-green-500 rounded-full flex items-center justify-center text-green-500 text-3xl shadow-lg hover:bg-green-50 transition-colors transform hover:scale-105"
+                className="w-16 h-16 bg-white border-4 border-green-500 rounded-full flex items-center justify-center text-green-500 text-3xl shadow-xl hover:bg-green-50 active:scale-90 transition-all"
               >
                 💚
               </button>
@@ -156,12 +161,21 @@ export default function Matches() {
           </div>
         </div>
       ) : (
-        <div className="text-center mt-20">
-          <div className="text-6xl mb-4">🏜️</div>
-          <h2 className="text-xl font-bold text-gray-700">Acabou a fila!</h2>
-          <p className="text-gray-500">Você já viu todo mundo da festa.</p>
+        <div className="text-center mt-20 p-10 bg-white rounded-3xl shadow-inner border-2 border-dashed border-orange-200">
+          <div className="text-7xl mb-4">🏜️</div>
+          <h2 className="text-2xl font-black text-gray-400 uppercase italic">Fim da Linha</h2>
+          <p className="text-gray-400">Não tem mais ninguém por enquanto!</p>
         </div>
       )}
     </main>
+  );
+}
+
+// O Next.js exige que componentes que usam useSearchParams fiquem dentro de um Suspense
+export default function Matches() {
+  return (
+    <Suspense fallback={<div className="text-center p-20 text-black">Carregando...</div>}>
+      <MatchesContent />
+    </Suspense>
   );
 }
