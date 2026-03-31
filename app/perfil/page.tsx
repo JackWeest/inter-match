@@ -1,157 +1,80 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
+import { LogOut, Edit3, Trash2, AtSign, ExternalLink } from 'lucide-react';
 
-export default function Perfil() {
+export default function PreviewPerfil() {
+  const [profile, setProfile] = useState<any>(null);
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [foto, setFoto] = useState<File | null>(null);
-  
-  const [nome, setNome] = useState('');
-  const [idade, setIdade] = useState('');
-  const [genero, setGenero] = useState('');
-  const [sexualidade, setSexualidade] = useState('');
-  const [mostrarSexualidade, setMostrarSexualidade] = useState(true);
-  const [curso, setCurso] = useState('');
-  const [instagram, setInstagram] = useState('');
 
-  const handleSalvarPerfil = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
+  useEffect(() => {
+    const getProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não está logado!');
-
-      let foto_url = '';
-
-      if (foto) {
-        // 1. Gera um nome de arquivo limpo e único
-        const fileExt = foto.name.split('.').pop();
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-
-        // 2. Upload para o bucket
-        const { error: uploadError } = await supabase.storage
-          .from('fotos')
-          .upload(fileName, foto);
-
-        if (uploadError) throw uploadError;
-
-        // 3. CONSTRUÇÃO DIRETA DO LINK (Troque SEU_ID_DO_SUPABASE pelo seu ID real)
-        // Exemplo: https://abcde12345.supabase.co
-        const SUPABASE_PROJECT_ID = 'pelofnnecqpuxjwxbxhm'; 
-        foto_url = `https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/fotos/${fileName}`;
-
-      } else {
-        throw new Error('A foto de perfil é obrigatória para a festa!');
+      if (user) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        setProfile(data);
       }
+    };
+    getProfile();
+  }, []);
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          nome,
-          idade: parseInt(idade),
-          genero,
-          sexualidade,
-          mostrar_sexualidade: mostrarSexualidade,
-          faculdade_curso: curso,
-          instagram,
-          foto_url,
-        });
-
-      if (profileError) throw profileError;
-
-      router.push('/matches?success=true');
-
-    } catch (error: any) {
-      alert('Erro: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
+  const handleSair = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem('supabase.auth.token');
+    router.push('/');
   };
 
+  if (!profile) return <div className="min-h-screen bg-red-950 flex items-center justify-center text-red-500 font-bold">Carregando perfil...</div>;
+
   return (
-    <main className="flex min-h-screen flex-col items-center py-10 bg-orange-50 px-4 text-black">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-8 border-t-4 border-purple-600">
-        <h1 className="text-3xl font-bold text-orange-600 mb-2 text-center italic uppercase">Match Med 🏥</h1>
-        <p className="text-center text-gray-500 mb-6 font-medium text-sm">Monte seu perfil para a festa</p>
-
-        <form onSubmit={handleSalvarPerfil} className="flex flex-col gap-5">
+    <main className="min-h-screen bg-[#8b0000] p-6 flex flex-col items-center justify-center">
+      {/* CARD DE PREVIEW (Igual sua 5ª imagem) */}
+      <div className="relative w-full max-w-sm">
+        <div className="relative aspect-[3/4] rounded-[2rem] overflow-hidden border-4 border-black/40 shadow-2xl">
+          <img src={profile.foto_url} className="w-full h-full object-cover" alt="Sua foto" />
           
-          <div>
-            <label className="block text-sm font-bold text-purple-700 mb-1">Sua melhor foto (Obrigatória) 📸</label>
-            <input 
-              type="file" 
-              accept="image/*"
-              onChange={(e) => setFoto(e.target.files?.[0] || null)}
-              required
-              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-100 file:text-orange-700 hover:file:bg-orange-200"
-            />
+          {/* Moldura de Sangue/Estilo (Você pode usar um SVG ou Overlay) */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+          
+          {/* Info Box */}
+          <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
+             <h2 className="text-2xl font-black italic text-white leading-none mb-1">
+               {profile.nome}, {profile.idade}
+             </h2>
+             <div className="flex gap-2 mb-2">
+                <span className="bg-white/20 px-2 py-1 rounded text-[10px] font-bold uppercase">{profile.genero}</span>
+                <span className="bg-white/20 px-2 py-1 rounded text-[10px] font-bold uppercase">{profile.orientacao}</span>
+             </div>
+             <div className="flex items-center gap-4 text-xs font-bold text-gray-300">
+                <span>{profile.curso}</span>
+                <span>{profile.instituicao}</span>
+             </div>
+             <div className="mt-3 flex items-center gap-2 text-white/80 text-xs italic">
+                <div className="mt-3 flex items-center gap-2 text-white/80 text-xs italic">
+                <AtSign size={14} /> <span>@{profile.insta}</span> <ExternalLink size={12}/>
+                </div>
+             </div>
           </div>
+        </div>
 
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-bold text-purple-700 mb-1">Nome</label>
-              <input type="text" required value={nome} onChange={(e) => setNome(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Ex: Janiel Jr" />
-            </div>
-            <div className="w-24">
-              <label className="block text-sm font-bold text-purple-700 mb-1">Idade</label>
-              <input type="number" required value={idade} onChange={(e) => setIdade(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="22" />
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-bold text-purple-700 mb-1">Gênero</label>
-              <select required value={genero} onChange={(e) => setGenero(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white">
-                <option value="">Selecione...</option>
-                <option value="Homem">Homem</option>
-                <option value="Mulher">Mulher</option>
-                <option value="Não-binário">Não-binário</option>
-              </select>
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-bold text-purple-700 mb-1">Sexualidade</label>
-              <select required value={sexualidade} onChange={(e) => setSexualidade(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white">
-                <option value="">Selecione...</option>
-                <option value="Hétero">Hétero</option>
-                <option value="Bissexual">Bissexual</option>
-                <option value="Homossexual">Homossexual</option>
-                <option value="Pansexual">Pansexual</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 bg-purple-50 p-3 rounded-lg border border-purple-100">
-            <input type="checkbox" id="mostrarSex" checked={mostrarSexualidade} onChange={(e) => setMostrarSexualidade(e.target.checked)}
-              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500" />
-            <label htmlFor="mostrarSex" className="text-sm text-purple-800 font-medium">Exibir minha sexualidade no perfil</label>
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-purple-700 mb-1">Faculdade / Curso / Atlética</label>
-            <input type="text" required value={curso} onChange={(e) => setCurso(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Ex: Medicina UFC Sobral" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-purple-700 mb-1">Instagram (@)</label>
-            <input type="text" value={instagram} onChange={(e) => setInstagram(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Ex: @janieljr" />
-          </div>
-
-          <button type="submit" disabled={loading}
-            className="w-full bg-purple-600 text-white font-black py-4 rounded-xl hover:bg-purple-700 transition-all mt-4 shadow-lg active:scale-95 uppercase">
-            {loading ? 'Salvando...' : 'Salvar Perfil e Começar 🔥'}
+        {/* BOTÕES DE AÇÃO */}
+        <div className="flex gap-2 mt-6">
+          <button onClick={() => router.push('/perfil/editar')} 
+            className="flex-1 bg-red-700 text-white font-black py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all">
+            <Edit3 size={18}/> EDITAR
           </button>
-        </form>
+          
+          <button onClick={handleSair}
+            className="bg-zinc-800 text-red-500 font-black px-6 py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all">
+            <LogOut size={18}/> SAIR
+          </button>
+
+          <button className="bg-zinc-900/50 text-red-900 p-4 rounded-xl shadow-lg">
+            <Trash2 size={20}/>
+          </button>
+        </div>
       </div>
     </main>
   );

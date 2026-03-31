@@ -1,181 +1,123 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+// 💉 TROCA CIRÚRGICA: Instagram -> AtSign
+import { AtSign, Lock, ChevronRight, Heart } from 'lucide-react';
 
-// Criamos uma função interna para o conteúdo da página
-function MatchesContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [showToast, setShowToast] = useState(false);
-  const [perfis, setPerfis] = useState<any[]>([]);
-  const [indiceAtual, setIndiceAtual] = useState(0);
+export default function MeusMatches() {
+  const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  
+  const matchesLiberados = true; 
 
   useEffect(() => {
-    // Se vier do perfil com sucesso, mostra o alerta
-    if (searchParams.get('success') === 'true') {
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 4000);
+    if (matchesLiberados) {
+      buscarMatchesMutuos();
     }
-    carregarPerfis();
-  }, [searchParams]);
+  }, []);
 
-  const carregarPerfis = async () => {
+  const buscarMatchesMutuos = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/');
-        return;
-      }
+      if (!user) return;
 
-      const { data: meuPerfil } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (!meuPerfil) {
-        router.push('/perfil');
-        return;
-      }
-
-      const { data: meusVotos } = await supabase
+      const { data: meusLikes } = await supabase
         .from('likes')
         .select('receiver_id')
-        .eq('sender_id', user.id);
-      
-      const idsVotados = meusVotos?.map(v => v.receiver_id) || [];
+        .eq('sender_id', user.id)
+        .eq('liked', true);
 
-      const { data: outrosPerfis } = await supabase
-        .from('profiles')
-        .select('*')
-        .neq('id', user.id);
+      const { data: likesRecebidos } = await supabase
+        .from('likes')
+        .select('sender_id')
+        .eq('receiver_id', user.id)
+        .eq('liked', true);
 
-      if (outrosPerfis) {
-        let perfisFiltrados = outrosPerfis.filter(p => !idsVotados.includes(p.id));
+      if (meusLikes && likesRecebidos) {
+        const idsMeusLikes = meusLikes.map(l => l.receiver_id);
+        const idsLikesRecebidos = likesRecebidos.map(l => l.sender_id);
+        const idsMatches = idsMeusLikes.filter(id => idsLikesRecebidos.includes(id));
 
-        // Lógica de Match (simplificada para o código não ficar gigante)
-        perfisFiltrados = perfisFiltrados.filter(p => {
-          const eu = meuPerfil;
-          const outro = p;
-          if (eu.genero === 'Homem' && eu.sexualidade === 'Hétero') return outro.genero === 'Mulher';
-          if (eu.genero === 'Mulher' && eu.sexualidade === 'Hétero') return outro.genero === 'Homem';
-          // ... outras lógicas podem seguir aqui
-          return true; 
-        });
-
-        setPerfis(perfisFiltrados);
+        if (idsMatches.length > 0) {
+          const { data: perfisMatches } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', idsMatches);
+          
+          setMatches(perfisMatches || []);
+        }
       }
     } catch (error) {
-      console.error('Erro ao carregar perfis:', error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const votar = async (liked: boolean) => {
-    const perfilAtual = perfis[indiceAtual];
-    if (!perfilAtual) return;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    await supabase.from('likes').insert({
-      sender_id: user.id,
-      receiver_id: perfilAtual.id,
-      liked: liked
-    });
-
-    setIndiceAtual(indiceAtual + 1);
-  };
-
-  if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-orange-50 text-orange-600 font-bold italic">
-      Buscando a galera da Med... 🏥
-    </div>
-  );
-
-  const perfilExibido = perfis[indiceAtual];
+  if (!matchesLiberados) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-orange-50 p-6 text-center">
+        <div className="bg-white p-8 rounded-full mb-6 shadow-xl text-purple-600">
+            <Lock size={64} />
+        </div>
+        <h2 className="text-2xl font-bold text-purple-700">Matches Bloqueados</h2>
+        <p className="text-gray-600 mt-2 max-w-xs italic">Aguarde a liberação dos resultados!</p>
+      </main>
+    );
+  }
 
   return (
-    <main className="flex min-h-screen flex-col items-center py-10 bg-orange-50 px-4">
-      
-      {showToast && (
-        <div className="fixed top-5 z-50 animate-bounce bg-purple-600 text-white px-6 py-3 rounded-full shadow-2xl border-2 border-orange-400">
-          <span className="font-bold">🔥 Perfil criado com sucesso!</span>
+    <main className="min-h-screen bg-orange-50 pb-24 flex flex-col items-center px-4">
+      <div className="w-full max-w-md pt-10 pb-6">
+        <h1 className="text-3xl font-bold text-orange-600 flex items-center gap-2">
+          Seus Matches <Heart size={28} className="text-orange-500" fill="currentColor"/>
+        </h1>
+        <p className="text-purple-700 text-sm font-medium italic mt-1">Conexões confirmadas no plantão</p>
+      </div>
+
+      {loading ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-2">
+            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-orange-600 font-bold text-xs uppercase">Sincronizando...</p>
         </div>
-      )}
-
-      <h1 className="text-3xl font-black text-orange-600 mb-8 italic uppercase tracking-tighter">Match Med 🏥</h1>
-
-      {perfilExibido ? (
-        <div className="w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-b-8 border-purple-600 flex flex-col">
-          
-          {/* FOTO - Usando tag IMG que é mais segura que BackgroundImage */}
-          <div className="w-full h-[400px] bg-gray-200 relative">
-            {perfilExibido.foto_url ? (
+      ) : matches.length > 0 ? (
+        <div className="w-full max-w-md flex flex-col gap-4">
+          {matches.map((match) => (
+            <div key={match.id} className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-lg border-l-4 border-purple-500 active:scale-95 transition-transform">
               <img 
-                src={perfilExibido.foto_url} 
-                alt={perfilExibido.nome}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = "https://via.placeholder.com/400x400?text=Erro+na+Foto";
-                }}
+                src={match.foto_url || 'https://via.placeholder.com/150'} 
+                alt={match.nome} 
+                className="w-16 h-16 rounded-full object-cover border-2 border-orange-200 shadow-sm" 
               />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-6xl">👤</div>
-            )}
-          </div>
-
-          <div className="p-6 text-black">
-            <h2 className="text-3xl font-black text-gray-800">
-              {perfilExibido.nome}, {perfilExibido.idade}
-            </h2>
-            <p className="text-purple-600 font-bold uppercase text-xs tracking-wider">
-              {perfilExibido.faculdade_curso}
-            </p>
-            
-            {perfilExibido.mostrar_sexualidade && (
-              <span className="inline-block bg-orange-100 text-orange-800 text-[10px] px-3 py-1 rounded-full mt-3 font-black uppercase">
-                {perfilExibido.sexualidade}
-              </span>
-            )}
-
-            <div className="flex justify-around items-center mt-8">
-              <button 
-                onClick={() => votar(false)}
-                className="w-16 h-16 bg-white border-4 border-red-500 rounded-full flex items-center justify-center text-red-500 text-3xl shadow-xl hover:bg-red-50 active:scale-90 transition-all"
-              >
-                ✕
-              </button>
               
-              <button 
-                onClick={() => votar(true)}
-                className="w-16 h-16 bg-white border-4 border-green-500 rounded-full flex items-center justify-center text-green-500 text-3xl shadow-xl hover:bg-green-50 active:scale-90 transition-all"
-              >
-                💚
-              </button>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-800 text-lg leading-tight">{match.nome}, {match.idade}</h3>
+                <p className="text-purple-600 text-xs font-semibold">{match.curso} | {match.instituicao}</p>
+                
+                {match.insta && (
+                  <a 
+                    href={`https://instagram.com/${match.insta.replace('@', '')}`} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-orange-500 text-xs font-bold mt-2 hover:underline"
+                  >
+                    {/* 💉 AQUI: AtSign no lugar do Instagram */}
+                    <AtSign size={14} /> @{match.insta.replace('@', '')}
+                  </a>
+                )}
+              </div>
+              <ChevronRight className="text-gray-300" size={20} />
             </div>
-          </div>
+          ))}
         </div>
       ) : (
-        <div className="text-center mt-20 p-10 bg-white rounded-3xl shadow-inner border-2 border-dashed border-orange-200">
-          <div className="text-7xl mb-4">🏜️</div>
-          <h2 className="text-2xl font-black text-gray-400 uppercase italic">Fim da Linha</h2>
-          <p className="text-gray-400">Não tem mais ninguém por enquanto!</p>
+        <div className="flex-1 flex flex-col items-center justify-center text-center opacity-60">
+          <p className="text-gray-500 italic">Nada por aqui ainda...</p>
         </div>
       )}
     </main>
-  );
-}
-
-// O Next.js exige que componentes que usam useSearchParams fiquem dentro de um Suspense
-export default function Matches() {
-  return (
-    <Suspense fallback={<div className="text-center p-20 text-black">Carregando...</div>}>
-      <MatchesContent />
-    </Suspense>
   );
 }
