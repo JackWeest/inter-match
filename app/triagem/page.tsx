@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export const dynamic = 'force-dynamic'; // <--- O "choque" de realidade pro Next.js
+export const dynamic = 'force-dynamic';
 
-// Criamos uma função interna para o conteúdo da página
 function MatchesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -15,16 +14,7 @@ function MatchesContent() {
   const [indiceAtual, setIndiceAtual] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Se vier do perfil com sucesso, mostra o alerta
-    if (searchParams.get('success') === 'true') {
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 4000);
-    }
-    carregarPerfis();
-  }, [searchParams]);
-
-  const carregarPerfis = async () => {
+  const carregarPerfis = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -58,13 +48,18 @@ function MatchesContent() {
       if (outrosPerfis) {
         let perfisFiltrados = outrosPerfis.filter(p => !idsVotados.includes(p.id));
 
-        // Lógica de Match (simplificada para o código não ficar gigante)
         perfisFiltrados = perfisFiltrados.filter(p => {
           const eu = meuPerfil;
           const outro = p;
-          if (eu.genero === 'Homem' && eu.sexualidade === 'Hétero') return outro.genero === 'Mulher';
-          if (eu.genero === 'Mulher' && eu.sexualidade === 'Hétero') return outro.genero === 'Homem';
-          // ... outras lógicas podem seguir aqui
+          
+          // Lógica de compatibilidade aprimorada
+          if (eu.sexualidade === 'Hétero') {
+            return eu.genero === 'Homem' ? outro.genero === 'Mulher' : outro.genero === 'Homem';
+          }
+          if (eu.sexualidade === 'Gay' || eu.sexualidade === 'Lésbica' || eu.sexualidade === 'Homossexual') {
+            return outro.genero === eu.genero;
+          }
+          // Bi, Pan ou outros retornam todos (ajuste conforme os dados da sua base)
           return true; 
         });
 
@@ -75,26 +70,48 @@ function MatchesContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    if (searchParams.get('success') === 'true') {
+      setShowToast(true);
+      timeoutId = setTimeout(() => setShowToast(false), 4000);
+    }
+    
+    carregarPerfis();
+
+    // Cleanup function para evitar memory leak do timer
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [searchParams, carregarPerfis]);
 
   const votar = async (liked: boolean) => {
     const perfilAtual = perfis[indiceAtual];
     if (!perfilAtual) return;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    // UI Otimista: avança o card na hora pra não causar lag visual pro usuário
+    setIndiceAtual(prev => prev + 1);
 
-    await supabase.from('likes').insert({
-      sender_id: user.id,
-      receiver_id: perfilAtual.id,
-      liked: liked
-    });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    setIndiceAtual(indiceAtual + 1);
+      await supabase.from('likes').insert({
+        sender_id: user.id,
+        receiver_id: perfilAtual.id,
+        liked: liked
+      });
+    } catch (error) {
+      console.error('Erro ao registrar voto no Supabase:', error);
+    }
   };
 
+  // 💉 AJUSTE 1: Loading transparente
   if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-orange-50 text-orange-600 font-bold italic">
+    <div className="flex min-h-screen items-center justify-center bg-transparent font-bold italic text-orange-600">
       Buscando a galera da Med... 🏥
     </div>
   );
@@ -102,7 +119,8 @@ function MatchesContent() {
   const perfilExibido = perfis[indiceAtual];
 
   return (
-    <main className="flex min-h-screen flex-col items-center py-10 bg-orange-50 px-4">
+    // 💉 AJUSTE 2: Main transparente para mostrar o SVG do Layout
+    <main className="flex min-h-screen flex-col items-center py-10 bg-transparent px-4">
       
       {showToast && (
         <div className="fixed top-5 z-50 animate-bounce bg-purple-600 text-white px-6 py-3 rounded-full shadow-2xl border-2 border-orange-400">
@@ -110,12 +128,11 @@ function MatchesContent() {
         </div>
       )}
 
-      <h1 className="text-3xl font-black text-orange-600 mb-8 italic uppercase tracking-tighter">Match Med 🏥</h1>
+      <h1 className="text-3xl font-black text-orange-600 mb-8 italic uppercase tracking-tighter drop-shadow-sm">Match Med 🏥</h1>
 
       {perfilExibido ? (
         <div className="w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-b-8 border-purple-600 flex flex-col">
           
-          {/* FOTO - Usando tag IMG que é mais segura que BackgroundImage */}
           <div className="w-full h-[400px] bg-gray-200 relative">
             {perfilExibido.foto_url ? (
               <img 
@@ -163,20 +180,20 @@ function MatchesContent() {
           </div>
         </div>
       ) : (
-        <div className="text-center mt-20 p-10 bg-white rounded-3xl shadow-inner border-2 border-dashed border-orange-200">
+        // 💉 AJUSTE 3: Card final levemente translúcido (backdrop-blur)
+        <div className="text-center mt-20 p-10 bg-white/80 backdrop-blur-md rounded-3xl shadow-xl border-2 border-dashed border-orange-200">
           <div className="text-7xl mb-4">🏜️</div>
-          <h2 className="text-2xl font-black text-gray-400 uppercase italic">Fim da Linha</h2>
-          <p className="text-gray-400">Não tem mais ninguém por enquanto!</p>
+          <h2 className="text-2xl font-black text-gray-500 uppercase italic">Fim da Linha</h2>
+          <p className="text-gray-500 font-medium">Não tem mais ninguém por enquanto!</p>
         </div>
       )}
     </main>
   );
 }
 
-// O Next.js exige que componentes que usam useSearchParams fiquem dentro de um Suspense
 export default function Matches() {
   return (
-    <Suspense fallback={<div className="text-center p-20 text-black">Carregando...</div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-transparent text-black">Carregando...</div>}>
       <MatchesContent />
     </Suspense>
   );

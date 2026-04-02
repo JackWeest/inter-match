@@ -8,7 +8,6 @@ export default function Navbar() {
   const pathname = usePathname();
 
   // 🏥 ESCONDER NAVBAR: 
-  // Não mostramos a barra na Home, no Login ou no Cadastro (/ingressar)
   const rotasSemNavbar = ['/', '/login', '/ingressar'];
   
   if (rotasSemNavbar.includes(pathname)) {
@@ -36,7 +35,7 @@ export default function Navbar() {
       paddingBottom: 'env(safe-area-inset-bottom)'
     }}>
       
-      {/* TRIAGEM (Onde ficam os cards/fogo) */}
+      {/* TRIAGEM */}
       <Link href="/triagem" style={{ 
         display: 'flex', 
         flexDirection: 'column', 
@@ -49,7 +48,7 @@ export default function Navbar() {
         <span style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Triagem</span>
       </Link>
 
-      {/* CURTIDAS (Onde ficam os Matches Mútuos / coração) */}
+      {/* MATCHES (Alterado de "Curtidas" para "Matches") */}
       <Link href="/matches" style={{ 
         display: 'flex', 
         flexDirection: 'column', 
@@ -59,17 +58,17 @@ export default function Navbar() {
         color: pathname === '/matches' ? activeColor : inactiveColor 
       }}>
         <Heart size={28} fill={pathname === '/matches' ? activeColor : 'none'} />
-        <span style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase' }}>Curtidas</span>
+        <span style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase' }}>Matches</span>
       </Link>
 
-      {/* VOCÊ (Seu perfil / preview) */}
+      {/* VOCÊ */}
       <Link href="/perfil" style={{ 
         display: 'flex', 
         flexDirection: 'column', 
         alignItems: 'center', 
         textDecoration: 'none',
         gap: '4px',
-        color: pathname === '/perfil' || pathname === '/perfil/editar' ? activeColor : inactiveColor 
+        color: pathname.startsWith('/perfil') ? activeColor : inactiveColor 
       }}>
         <User size={28} fill={pathname.startsWith('/perfil') ? activeColor : 'none'} />
         <span style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase' }}>Você</span>

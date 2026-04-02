@@ -33,7 +33,7 @@ export default function Catraca({ children }: { children: React.ReactNode }) {
   // a gente retorna um fundo neutro sem elementos complexos.
   // Isso evita que extensões como Dark Reader quebrem a hidratação.
   if (!montado) {
-    return <div className="min-h-screen bg-orange-50" />;
+    return <div className="min-h-screen bg-transparent" />;
   }
 
   const isRotaLivre = ['/', '/login', '/ingressar'].includes(pathname);

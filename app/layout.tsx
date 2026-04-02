@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import Catraca from "./components/Catraca";
+import Background from "./components/Background"; 
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Match Med 🏥",
+  title: "Inter Match 🏥",
   description: "Triagem da Festa - UFC Sobral",
 };
 
@@ -30,19 +31,23 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
-      <body className="min-h-screen bg-orange-50 antialiased flex flex-col relative overflow-x-hidden">
+      {/* 💉 INFORME: Body totalmente transparente para não criar "muros" */}
+      <body className="min-h-screen antialiased flex flex-col relative overflow-x-hidden bg-transparent">
         
-        {/* 1. O "Leão de Chácara" envolve tudo */}
+        {/* 1. O "Leão de Chácara" envolve a lógica e os componentes */}
         <Catraca>
           
+          {/* 💉 O Fundo agora vive aqui dentro. Como a Catraca retorna apenas um Fragment <>,
+              o Background vai se posicionar em relação ao Body. */}
+          <Background />
+          
           {/* 2. Conteúdo Principal */}
-          {/* pb-24 garante que o conteúdo final não fique "esmagado" pela Navbar */}
-          <main className="flex-1 w-full pb-24"> 
+          {/* relative z-10 garante que o conteúdo "boie" por cima do fundo */}
+          <main className="flex-1 w-full pb-24 relative z-10 bg-transparent"> 
             {children}
           </main>
           
           {/* 3. A Barra de Navegação Fixa */}
-          {/* Como ela tem a lógica interna de sumir no Login/Home, pode ficar aqui tranquila */}
           <Navbar />
           
         </Catraca>
