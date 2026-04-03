@@ -84,7 +84,7 @@ export default function Registro() {
           Criar Conta
         </h1>
         <p className="text-gray-500 mb-8 text-center text-sm">
-          Garanta sua pulseira digital para a Triagem
+          Garanta seu perfil pra interagir com a galera
         </p>
 
         <form onSubmit={handleCadastrar} className="flex flex-col gap-4">

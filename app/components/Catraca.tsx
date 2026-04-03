@@ -7,12 +7,14 @@ export default function Catraca({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [autorizado, setAutorizado] = useState(false);
-  const [montado, setMontado] = useState(false); // <--- Nova trava de segurança
+  const [montado, setMontado] = useState(false); 
 
   useEffect(() => {
-    setMontado(true); // O componente "nasceu" no navegador
+    setMontado(true);
 
-    const rotasLivres = ['/', '/login', '/ingressar'];
+    // 💉 AJUSTE 1: Removido o '/login' já que sua Home (/) faz esse papel
+    const rotasLivres = ['/', '/ingressar'];
+    
     if (rotasLivres.includes(pathname)) {
       setAutorizado(true);
       return;
@@ -22,27 +24,26 @@ export default function Catraca({ children }: { children: React.ReactNode }) {
 
     if (!temLogin) {
       setAutorizado(false);
-      router.push('/login');
+      // 💉 AJUSTE 2: Redireciona para a raiz se não houver login
+      router.push('/');
     } else {
       setAutorizado(true);
     }
   }, [pathname, router]);
 
   // 🏥 TRATAMENTO DE CHOQUE:
-  // Enquanto o React não tiver certeza de que está no navegador (SSR),
-  // a gente retorna um fundo neutro sem elementos complexos.
-  // Isso evita que extensões como Dark Reader quebrem a hidratação.
   if (!montado) {
     return <div className="min-h-screen bg-transparent" />;
   }
 
-  const isRotaLivre = ['/', '/login', '/ingressar'].includes(pathname);
+  // 💉 AJUSTE 3: Sincronizando com as rotas livres atuais
+  const isRotaLivre = ['/', '/ingressar'].includes(pathname);
 
   // Se não está autorizado e não é rota livre, mostra o loading
   if (!autorizado && !isRotaLivre) {
     return (
       <div 
-        suppressHydrationWarning // <--- Blindagem contra extensões
+        suppressHydrationWarning 
         style={{ 
           display: 'flex', 
           height: '100vh', 

@@ -1,8 +1,39 @@
 @import "tailwindcss";
 
-/* 💉 INFORME: Forçando a transparência absoluta nos tecidos base */
-html, body {
-  background-color: transparent !important;
-  margin: 0;
-  padding: 0;
+/* 💉 RESET CIRÚRGICO: Matando o scroll e forçando o encaixe */
+@layer base {
+  html, body {
+    /* Transparência absoluta como você pediu */
+    background-color: transparent !important;
+    
+    /* Zera tudo que pode empurrar o layout */
+    margin: 0;
+    padding: 0;
+    
+    /* Trava a altura em 100% da tela (Dvh é melhor para mobile) */
+    height: 100dvh;
+    width: 100vw;
+    
+    /* O golpe de misericórdia na barra de rolagem */
+    overflow: hidden !important;
+    
+    /* Evita aquele "puxão" de scroll no mobile que cria espaços brancos */
+    overscroll-behavior: none;
+    
+    /* Melhora a renderização das fontes (padrão de app premium) */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Garante que o Next.js não crie uma div interna com scroll */
+  #__next, [data-nextjs-scroll-focus-boundary] {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+}
+
+/* 🩺 Ajuste extra: Se você tiver botões que causam foco e criam scroll */
+:focus {
+  outline: none;
 }
