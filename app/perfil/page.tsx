@@ -68,15 +68,16 @@ export default function PreviewPerfil() {
 
   return (
     <>
-      {/* 💉 FUNDOS LÁ ATRÁS (O novo padrão Obsidian) */}
+      {/* FUNDOS */}
       <div className="fixed inset-0 bg-[#0f051a] -z-20 pointer-events-none" />
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
 
-      <main className="relative w-full min-h-[100dvh] flex flex-col items-center justify-center pt-8 pb-32 md:py-10 px-6 overflow-x-hidden">
+      {/* ✅ CORREÇÃO: pb usa o mesmo cálculo da navbar para nunca colidir */}
+      <main className="relative w-full min-h-[100dvh] flex flex-col items-center justify-center pt-8 pb-[calc(64px+max(1.5rem,env(safe-area-inset-bottom))+1rem)] md:py-10 px-6 overflow-x-hidden">
         
         <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 w-full max-w-4xl animate-in fade-in zoom-in-95 duration-500 mt-8 md:mt-0 z-10">
           
-          {/* CARD DE PREVIEW - ESTILO OBSIDIAN GLASS */}
+          {/* CARD DE PREVIEW */}
           <div className="relative w-[280px] md:w-[340px] aspect-[3/4] rounded-[2.5rem] overflow-hidden border-4 border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-zinc-900 shrink-0 group pointer-events-auto">
             {profile.foto_url ? (
               <img src={profile.foto_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Sua foto" />
@@ -87,43 +88,42 @@ export default function PreviewPerfil() {
               </div>
             )}
             
-            {/* Gradiente Obsidian profundo */}
             <div className="absolute inset-0 bg-gradient-to-t from-[#0f051a] via-[#0f051a]/40 to-transparent opacity-90 pointer-events-none" />
             
             <div className="absolute bottom-6 left-6 right-6 flex flex-col gap-1">
-                <h2 className="text-3xl font-black italic text-white leading-none truncate drop-shadow-lg uppercase">
-                  {profile.nome || 'Anônimo'}, {profile.idade || '?'}
-                </h2>
-                
-                {profile.mostrar_curso && (profile.curso || profile.instituicao) && (
-                  <p className="text-orange-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2 truncate leading-tight">
-                    {[profile.curso, profile.instituicao].filter(Boolean).join(' · ')}
-                  </p>
-                )}
+              <h2 className="text-3xl font-black italic text-white leading-none truncate drop-shadow-lg uppercase">
+                {profile.nome || 'Anônimo'}, {profile.idade || '?'}
+              </h2>
+              
+              {profile.mostrar_curso && (profile.curso || profile.instituicao) && (
+                <p className="text-orange-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2 truncate leading-tight">
+                  {[profile.curso, profile.instituicao].filter(Boolean).join(' · ')}
+                </p>
+              )}
 
-                <div className="flex flex-wrap gap-2 mt-1">
-                   {profile.genero && (
-                     <span className="bg-white/5 backdrop-blur-md border border-white/10 text-white/70 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
-                       {profile.genero}
-                     </span>
-                   )}
-                   {profile.mostrar_orientacao && profile.orientacao && (
-                     <span className="bg-orange-500/20 backdrop-blur-md border border-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
-                       {profile.orientacao}
-                     </span>
-                   )}
+              <div className="flex flex-wrap gap-2 mt-1">
+                {profile.genero && (
+                  <span className="bg-white/5 backdrop-blur-md border border-white/10 text-white/70 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
+                    {profile.genero}
+                  </span>
+                )}
+                {profile.mostrar_orientacao && profile.orientacao && (
+                  <span className="bg-orange-500/20 backdrop-blur-md border border-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
+                    {profile.orientacao}
+                  </span>
+                )}
+              </div>
+
+              {profile.insta && (
+                <div className="flex items-center gap-1.5 mt-4 text-white/60 font-bold text-xs bg-black/40 w-fit px-4 py-2 rounded-full border border-white/5 backdrop-blur-sm pointer-events-auto">
+                  <AtSign size={12} className="text-orange-500" /> 
+                  <span className="tracking-wide">@{profile.insta.replace('@', '')}</span> 
                 </div>
-
-                {profile.insta && (
-                  <div className="flex items-center gap-1.5 mt-4 text-white/60 font-bold text-xs bg-black/40 w-fit px-4 py-2 rounded-full border border-white/5 backdrop-blur-sm pointer-events-auto">
-                    <AtSign size={12} className="text-orange-500" /> 
-                    <span className="tracking-wide">@{profile.insta.replace('@', '')}</span> 
-                  </div>
-                )}
+              )}
             </div>
           </div>
 
-          {/* PAINEL DE CONTROLE - UNIFICADO */}
+          {/* PAINEL DE CONTROLE */}
           <div className="w-[280px] md:w-[320px] flex flex-col gap-3 shrink-0 pointer-events-auto">
             
             <button 
@@ -135,7 +135,6 @@ export default function PreviewPerfil() {
             
             <div className="w-full h-px bg-white/5 my-2" /> 
             
-            {/* BOTÕES COM EFEITO VIDRO ROXO NOTURNO */}
             <button 
               onClick={handleSair}
               className="w-full h-14 rounded-2xl font-black flex items-center justify-center gap-3 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-[#1a0f30]/40 backdrop-blur-md text-white/50 hover:text-white hover:bg-[#1a0f30]/60 border border-white/5 shadow-inner"
@@ -154,7 +153,7 @@ export default function PreviewPerfil() {
         </div>
       </main>
 
-      {/* MODAL DE CONFIRMAÇÃO OBSIDIAN */}
+      {/* MODAL DE CONFIRMAÇÃO */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
           <div className="absolute inset-0" onClick={() => !deleting && setShowDeleteModal(false)} />
