@@ -73,7 +73,7 @@ export default function PreviewPerfil() {
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
 
       {/* ✅ CORREÇÃO: pb usa o mesmo cálculo da navbar para nunca colidir */}
-      <main className="relative w-full min-h-[100dvh] flex flex-col items-center justify-center pt-8 pb-[calc(64px+max(1.5rem,env(safe-area-inset-bottom))+1rem)] md:py-10 px-6 overflow-x-hidden">
+<main className="relative w-full flex flex-col items-center justify-start pt-6 pb-[calc(64px+max(1.5rem,env(safe-area-inset-bottom))+1.5rem)] md:min-h-[100dvh] md:justify-center md:py-10 px-6">
         
         <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 w-full max-w-4xl animate-in fade-in zoom-in-95 duration-500 mt-8 md:mt-0 z-10">
           

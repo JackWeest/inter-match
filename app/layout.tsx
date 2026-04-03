@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Inter Match 🏥",
+  title: "Match Med 🏥",
   description: "Triagem da Festa - UFC Sobral",
 };
 
@@ -32,7 +32,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
       {/* 💉 INFORME: Body totalmente transparente para não criar "muros" */}
-      <body className="min-h-screen antialiased flex flex-col relative overflow-x-hidden bg-transparent">
+      <body className="min-h-screen antialiased flex flex-col relative bg-transparent">
         
         {/* 1. O "Leão de Chácara" envolve a lógica e os componentes */}
         <Catraca>
@@ -43,7 +43,7 @@ export default function RootLayout({
           
           {/* 2. Conteúdo Principal */}
           {/* relative z-10 garante que o conteúdo "boie" por cima do fundo */}
-          <main className="flex-1 w-full pb-24 relative z-10 bg-transparent"> 
+          <main className="flex-1 w-full relative z-10 bg-transparent">
             {children}
           </main>
           
