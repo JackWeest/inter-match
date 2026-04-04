@@ -3,14 +3,15 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Flame, ChevronLeft } from 'lucide-react';
+import { Flame, ChevronLeft, Eye, EyeOff, AtSign } from 'lucide-react';
 
 export default function Registro() {
   const [email, setEmail] = useState('');
+  const [insta, setInsta] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const router = useRouter();
 
   const handleCadastrar = async (e: React.FormEvent) => {
@@ -23,116 +24,148 @@ export default function Registro() {
     }
 
     if (password.length < 6) {
-      alert('A senha precisa de pelo menos 6 caracteres.');
+      alert('A senha precisa ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    if (!insta) {
+      alert('O Instagram é obrigatório para a galera te achar no radar!');
       return;
     }
 
     setLoading(true);
     
-    const { error } = await supabase.auth.signUp({
+    // Faz a cirurgia de cadastro no banco
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
 
     if (error) {
       alert('Erro ao cadastrar: ' + error.message);
-    } else {
-      setSuccess(true); // Ativa a tela de "Checa seu e-mail"
+    } else if (data.user) {
+      // Já aproveita e injeta o Instagram do cara na ficha (upsert)
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        insta: insta.replace('@', ''), // Tira o @ se o cara tiver digitado
+      });
+
+      // Alta hospitalar direta! Sem confirmar e-mail, vai reto pro perfil.
+      router.push('/perfil/criar');
     }
     setLoading(false);
   };
 
-  // Se o cadastro deu certo, mostramos uma mensagem limpa
-  if (success) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-orange-50 p-6 text-center">
-        <div className="bg-white p-8 rounded-3xl shadow-xl max-w-sm border-t-4 border-green-500">
-          <div className="text-5xl mb-4">📧</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Quase lá!</h2>
-          <p className="text-gray-600 mb-6">
-            Enviamos um link de confirmação. **Checa seu e-mail** para liberar seu acesso à festa.
-          </p>
-          <button 
-            onClick={() => router.push('/')}
-            className="text-orange-600 font-bold hover:underline"
-          >
-            Voltar para a Home
-          </button>
-        </div>
-      </main>
-    );
-  }
+  const inputCls = 'w-full px-5 py-4 bg-black/20 border border-white/10 rounded-2xl focus:border-orange-500 focus:outline-none text-white font-bold text-xs placeholder:text-white/20 transition-all shadow-inner';
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-orange-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 border-t-4 border-orange-600">
+    <>
+      {/* 💉 FUNDOS GLOBAIS OBSIDIAN */}
+      <div className="fixed inset-0 bg-[#0f051a] -z-20 pointer-events-none" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
+
+      <main className="flex min-h-screen flex-col items-center justify-center p-6 relative z-10">
         
-        <button 
-          onClick={() => router.push('/')}
-          className="flex items-center text-gray-400 text-sm hover:text-orange-600 mb-6 transition-colors"
-        >
-          <ChevronLeft size={18} /> Voltar
-        </button>
-
-        <div className="flex justify-center mb-4">
-          <div className="bg-orange-100 p-3 rounded-full">
-            <Flame size={32} className="text-orange-600" fill="currentColor" />
-          </div>
-        </div>
-
-        <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">
-          Criar Conta
-        </h1>
-        <p className="text-gray-500 mb-8 text-center text-sm">
-          Garanta seu perfil pra interagir com a galera
-        </p>
-
-        <form onSubmit={handleCadastrar} className="flex flex-col gap-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">E-mail</label>
-            <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none text-black"
-              placeholder="seu@email.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Senha</label>
-            <input 
-              type="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none text-black"
-              placeholder="Mínimo 6 caracteres"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Confirmar Senha</label>
-            <input 
-              type="password" 
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none text-black"
-              placeholder="Repita sua senha"
-            />
-          </div>
-
+        <div className="w-full max-w-md bg-white/5 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-white/10 animate-in zoom-in duration-500">
+          
           <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full bg-orange-500 text-white font-black py-4 rounded-xl hover:bg-orange-600 transition-all shadow-lg shadow-orange-200 mt-4"
+            onClick={() => router.push('/')}
+            className="flex items-center gap-1 text-white/30 text-[10px] font-black uppercase tracking-widest hover:text-orange-500 transition-colors mb-8"
           >
-            {loading ? 'PROCESSANDO...' : 'CRIAR CONTA'}
+            <ChevronLeft size={16} /> Voltar
           </button>
-        </form>
-      </div>
-    </main>
+
+          <div className="flex flex-col items-center mb-8">
+            <div className="bg-orange-500 p-4 rounded-2xl shadow-[0_10px_30px_rgba(234,88,12,0.3)] mb-4">
+              <Flame size={32} color="white" fill="white" />
+            </div>
+            <h1 className="text-3xl font-black text-white italic uppercase tracking-tighter drop-shadow-lg leading-none">
+              Criar Conta<span className="text-orange-500">.</span>
+            </h1>
+            <p className="text-white/30 text-[9px] font-bold uppercase tracking-widest mt-2 text-center">
+              Garanta seu perfil na calourada
+            </p>
+          </div>
+
+          <form onSubmit={handleCadastrar} className="flex flex-col gap-5">
+            
+            {/* E-MAIL */}
+            <div>
+              <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-2 ml-1">E-mail</label>
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className={inputCls}
+                placeholder="seu@email.com"
+              />
+            </div>
+
+            {/* INSTAGRAM OBRIGATÓRIO */}
+            <div>
+              <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-2 ml-1">Instagram</label>
+              <div className="flex items-center gap-3 bg-black/20 border border-white/10 rounded-2xl px-5 py-4 focus-within:border-orange-500 transition-all shadow-inner">
+                <AtSign size={16} className="text-white/20" />
+                <input 
+                  type="text" 
+                  value={insta}
+                  onChange={(e) => setInsta(e.target.value)}
+                  required
+                  className="bg-transparent flex-1 outline-none text-white font-bold text-xs placeholder:text-white/20"
+                  placeholder="seu.insta" 
+                />
+              </div>
+            </div>
+
+            {/* SENHA */}
+            <div>
+              <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-2 ml-1">Senha</label>
+              <div className="relative">
+                <input 
+                  type={mostrarSenha ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className={inputCls + " pr-12"}
+                  placeholder="Mínimo 6 caracteres"
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setMostrarSenha(!mostrarSenha)} 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-orange-500 transition-colors"
+                >
+                  {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* CONFIRMAR SENHA */}
+            <div>
+              <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-2 ml-1">Confirmar Senha</label>
+              <div className="relative">
+                <input 
+                  type={mostrarSenha ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className={inputCls + " pr-12"}
+                  placeholder="Repita sua senha"
+                />
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-orange-500 text-white font-black italic uppercase tracking-widest py-4 rounded-2xl hover:bg-orange-400 transition-all shadow-lg shadow-orange-500/20 active:scale-95 disabled:opacity-50 text-sm mt-4"
+            >
+              {loading ? 'PROCESSANDO...' : 'CRIAR CONTA'}
+            </button>
+
+          </form>
+        </div>
+      </main>
+    </>
   );
 }

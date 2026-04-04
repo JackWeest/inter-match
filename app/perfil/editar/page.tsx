@@ -19,15 +19,15 @@ const ATLETICAS = {
     { nome: 'Tenebrosa',    curso: 'Medicina', instituicao: 'UNIFOR' },
   ],
   '2ª Divisão': [
-    { nome: 'Invocada',     curso: 'Medicina', instituicao: 'UNIFAMETRO' },
-    { nome: 'Caçadora',     curso: 'Medicina', instituicao: 'UNIFICI Iguatu' },
-    { nome: 'Perversa',     curso: 'Medicina', instituicao: 'UNIFAP Juazeiro' },
-    { nome: 'Aniquiladora', curso: 'Medicina', instituicao: 'IDOMED Canindé' },
+    { nome: 'Invocada',     curso: 'Medicina', instituicao: 'IDOMED Quixadá' },
+    { nome: 'Caçadora',     curso: 'Medicina', instituicao: 'UECE Crateús' },
+    { nome: 'Perversa',     curso: 'Medicina', instituicao: 'UNINTA Itapipoca' },
+    { nome: 'Aniquiladora', curso: 'Medicina', instituicao: 'IDOMED Iguatu' },
   ],
   'Convidadas': [
-    { nome: 'Voraz',         curso: 'Medicina', instituicao: 'UNIC Icó' },
-    { nome: 'Tirana',        curso: 'Medicina', instituicao: 'UNINTA Itapipoca' },
-    { nome: 'Exterminadora', curso: 'Medicina', instituicao: 'IDOMED Quixadá' },
+    { nome: 'Voraz',         curso: 'Medicina', instituicao: 'F5  Sobral' },
+    { nome: 'Tirana',        curso: 'Medicina', instituicao: 'UECE Quixeramobim' },
+    { nome: 'Exterminadora', curso: 'Medicina', instituicao: 'URCA Cariri' },
   ],
 } as const;
 

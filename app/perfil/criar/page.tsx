@@ -9,25 +9,25 @@ import imageCompression from 'browser-image-compression';
 // ─── DADOS DAS ATLÉTICAS ───────────────────────────────────────────────────────
 const ATLETICAS = {
   '1ª Divisão': [
-    { nome: 'Alcateia',    curso: 'Medicina', instituicao: 'UFC Sobral' },
-    { nome: 'Audácia',     curso: 'Medicina', instituicao: 'UFCA' },
-    { nome: 'Espartana',   curso: 'Medicina', instituicao: 'UNICHRISTUS' },
-    { nome: 'Fulminante',  curso: 'Medicina', instituicao: 'UNIFOR' },
-    { nome: 'Ira',         curso: 'Medicina', instituicao: 'UNI7' },
-    { nome: 'Kariris',     curso: 'Medicina', instituicao: 'UFCA Juazeiro' },
-    { nome: 'Selvagem',    curso: 'Medicina', instituicao: 'UNINASSAU' },
-    { nome: 'Tenebrosa',   curso: 'Medicina', instituicao: 'UNILEÃO' },
+    { nome: 'Alcateia',     curso: 'Medicina', instituicao: 'UFC Sobral' },
+    { nome: 'Audácia',      curso: 'Medicina', instituicao: 'Unichristus' },
+    { nome: 'Espartana',    curso: 'Medicina', instituicao: 'IDOMED Juazeiro' },
+    { nome: 'Fulminante',   curso: 'Medicina', instituicao: 'UECE' },
+    { nome: 'Ira',          curso: 'Medicina', instituicao: 'UNINTA Sobral' },
+    { nome: 'Kariris',      curso: 'Medicina', instituicao: 'UFCA Barbalha' },
+    { nome: 'Selvagem',     curso: 'Medicina', instituicao: 'UFC Fortaleza' },
+    { nome: 'Tenebrosa',    curso: 'Medicina', instituicao: 'UNIFOR' },
   ],
   '2ª Divisão': [
-    { nome: 'Invocada',    curso: 'Medicina', instituicao: 'FAMETRO' },
-    { nome: 'Caçadora',    curso: 'Medicina', instituicao: 'ESTÁCIO' },
-    { nome: 'Perversa',    curso: 'Medicina', instituicao: 'UNINTA' },
-    { nome: 'Aniquiladora',curso: 'Medicina', instituicao: 'FMJ' },
+    { nome: 'Invocada',     curso: 'Medicina', instituicao: 'IDOMED Quixadá' },
+    { nome: 'Caçadora',     curso: 'Medicina', instituicao: 'UECE Crateús' },
+    { nome: 'Perversa',     curso: 'Medicina', instituicao: 'UNINTA Itapipoca' },
+    { nome: 'Aniquiladora', curso: 'Medicina', instituicao: 'IDOMED Iguatu' },
   ],
   'Convidadas': [
-    { nome: 'Voraz',          curso: 'Medicina', instituicao: 'Convidada' },
-    { nome: 'Tirana',         curso: 'Medicina', instituicao: 'Convidada' },
-    { nome: 'Exterminadora',  curso: 'Medicina', instituicao: 'Convidada' },
+    { nome: 'Voraz',         curso: 'Medicina', instituicao: 'F5 Sobral' },
+    { nome: 'Tirana',        curso: 'Medicina', instituicao: 'UECE Quixeramobim' },
+    { nome: 'Exterminadora', curso: 'Medicina', instituicao: 'URCA Cariri' },
   ],
 } as const;
 
@@ -441,10 +441,10 @@ function StepPerfil({ f, set, onUpload, uploading, fileInputRef }: {
         </div>
       </Section>
 
-      <Section title="Instagram">
+      <Section title="Instagram *">
         <div className="flex items-center gap-3 bg-black/60 backdrop-blur-md border border-white/10 rounded-xl px-4 py-4 focus-within:border-orange-500/50 transition-all">
           <AtSign size={16} className="text-white/20" />
-          <input className="bg-transparent flex-1 outline-none text-white font-bold text-sm placeholder:text-white/10" value={f.insta} onChange={(e) => set('insta', e.target.value.replace('@', ''))} placeholder="seu.insta" />
+          <input className="bg-transparent flex-1 outline-none text-white font-bold text-sm placeholder:text-white/10" value={f.insta} onChange={(e) => set('insta', e.target.value.replace('@', ''))} placeholder="obrigatório" required />
         </div>
       </Section>
 
@@ -472,17 +472,33 @@ export default function CriarPerfil() {
 
   const set = (key: keyof OnboardingData, val: any) => setF(prev => ({ ...prev, [key]: val }));
 
+  // 💉 CIRURGIA 1: Sonda de Dados - Puxa o Instagram direto do banco de dados ao carregar
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('insta').eq('id', user.id).single();
+        if (profile?.insta && isMounted) {
+          set('insta', profile.insta);
+        }
+      }
+    })();
+    return () => { isMounted = false; };
+  }, []);
+
   // Calcular steps totais e step atual
   // Steps: 1=tipo, 2=atletica(se membro), 3=participacao, 4=perfil
   const totalSteps = f.tipo === 'atletica' ? 4 : f.tipo === 'convidado' ? 3 : 4;
 
+  // 💉 CIRURGIA 2: Bloqueio de Segurança - Exige que o f.insta não esteja vazio
   const canAdvance = () => {
     if (step === 1) return !!f.tipo;
     if (step === 2 && f.tipo === 'atletica') return !!f.atletica && !!f.cargo;
     if (step === 2 && f.tipo === 'convidado') return !!f.participacao;
     if (step === 3 && f.tipo === 'atletica') return !!f.participacao;
-    if (step === 3 && f.tipo === 'convidado') return !!f.nome;
-    if (step === 4) return !!f.nome;
+    if (step === 3 && f.tipo === 'convidado') return !!f.nome && !!f.insta;
+    if (step === 4) return !!f.nome && !!f.insta;
     return false;
   };
 
@@ -561,6 +577,9 @@ export default function CriarPerfil() {
   const completion = calcCompletion(f);
   const showPreview = isLastStep;
 
+  // Variável extra para checar se o formulário do último step está completo
+  const isReadyToSave = !!f.nome && !!f.insta;
+
   return (
     <>
       <style>{`
@@ -606,8 +625,8 @@ export default function CriarPerfil() {
             {/* Botão de avançar/confirmar */}
             <div className="mt-10 pb-10">
               {isLastStep ? (
-                <button onClick={salvar} disabled={loading || saved || !f.nome}
-                  className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-2xl ${saved ? 'bg-green-500 text-white' : !f.nome ? 'bg-white/5 border border-white/10 text-white/20 cursor-not-allowed' : 'bg-orange-500 text-white shadow-orange-500/20 hover:bg-orange-400'}`}>
+                <button onClick={salvar} disabled={loading || saved || !isReadyToSave}
+                  className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-2xl ${saved ? 'bg-green-500 text-white' : !isReadyToSave ? 'bg-white/5 border border-white/10 text-white/20 cursor-not-allowed' : 'bg-orange-500 text-white shadow-orange-500/20 hover:bg-orange-400'}`}>
                   {saved ? '✓ Perfil Criado!' : loading ? 'Salvando...' : 'Criar Perfil →'}
                 </button>
               ) : (
