@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
-import { AtSign, Heart, ChevronRight, X, User, GraduationCap, RotateCcw, ArrowLeft } from 'lucide-react';
-import Image from 'next/image';
+import { AtSign, Heart, ChevronRight, X, User, RotateCcw, ArrowLeft } from 'lucide-react';
+// 💉 CIRURGIA: Removido o import do 'next/image'
 
 export default function MeusMatches() {
   const [matches, setMatches] = useState<any[]>([]);
@@ -138,7 +138,8 @@ export default function MeusMatches() {
               >
                 <div className="absolute inset-0 z-0">
                   {selectedMatch.foto_url ? (
-                    <Image src={selectedMatch.foto_url} alt={selectedMatch.nome} fill className="object-cover" priority />
+                    /* 💉 CIRURGIA: Componente <Image /> trocado pelo <img> com as mesmas classes para preencher o card */
+                    <img src={selectedMatch.foto_url} alt={selectedMatch.nome} className="w-full h-full object-cover absolute inset-0" />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-[#1a1a1a] text-white/5"><User size={80} /></div>
                   )}
@@ -188,7 +189,7 @@ export default function MeusMatches() {
                 </div>
               </div>
 
-              {/* ── VERSO DO CARD (TRANSPLANTE DO RADAR) ── */}
+              {/* ── VERSO DO CARD ── */}
               <div
                 className="absolute inset-0 w-full aspect-[4/5] bg-[#0f051a] backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/10 flex flex-col overflow-hidden"
                 style={{

@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, ArrowRight, Loader2, AtSign, Check, ChevronDown } from 'lucide-react';
-// 💉 CIRURGIA: Removido o import do browser-image-compression!
 
 // ─── DADOS DAS ATLÉTICAS ───────────────────────────────────────────────────────
 const ATLETICAS = {
@@ -519,7 +518,7 @@ export default function CriarPerfil() {
 
   const isLastStep = (f.tipo === 'atletica' && step === 4) || (f.tipo === 'convidado' && step === 3);
 
-  // 💉 CIRURGIA MESTRE: Nova função de Upload direto pro Cloudinary
+  // ─── UPLOAD COM OTIMIZAÇÃO VIA URL DO CLOUDINARY ──────────────────────────
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
@@ -528,11 +527,9 @@ export default function CriarPerfil() {
 
       const formData = new FormData();
       formData.append('file', file);
-      // Aqui usamos o nome exato do preset que você criou lá no painel
-      formData.append('upload_preset', 'intermatch_fotos'); 
+      formData.append('upload_preset', 'intermatch_fotos');
 
-      // ⚠️ IMPORTANTE: Substitua 'SEU_CLOUD_NAME_AQUI' pelo seu nome real lá do Cloudinary!
-      const cloudName = 'dcsiucytm'; 
+      const cloudName = 'dcsiucytm';
       const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
 
       const response = await fetch(url, {
@@ -545,14 +542,20 @@ export default function CriarPerfil() {
       }
 
       const data = await response.json();
-      
-      // O Cloudinary nos devolve a URL segura (https) da foto já hospedada
-      set('foto_url', data.secure_url);
+
+      // Injeta transformações na URL para otimizar a imagem entregue:
+      // c_limit,w_800 → limita a largura a 800px (ideal para mobile)
+      // q_auto        → compressão automática sem perda visível de qualidade
+      // f_auto        → converte para WebP/AVIF automaticamente (muito mais leve)
+      const urlOriginal = data.secure_url;
+      const urlOtimizada = urlOriginal.replace('/upload/', '/upload/c_limit,w_800,q_auto,f_auto/');
+
+      set('foto_url', urlOtimizada);
 
     } catch (err: any) {
       alert('Erro no upload: ' + err.message);
-    } finally { 
-      setUploading(false); 
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -569,7 +572,6 @@ export default function CriarPerfil() {
         curso: f.curso,
         instituicao: f.instituicao,
         insta: f.insta,
-        // O Supabase agora vai apenas receber o link de texto gerado pelo Cloudinary!
         foto_url: f.foto_url,
         ver_homem: f.ver_homem,
         ver_mulher: f.ver_mulher,

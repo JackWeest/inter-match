@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, Loader2, AtSign, ChevronDown } from 'lucide-react';
-// 💉 CIRURGIA: Removido o import do compressor de imagem
 
 // ─── DADOS DAS ATLÉTICAS (igual ao onboarding) ────────────────────────────────
 const ATLETICAS = {
@@ -238,7 +237,7 @@ export default function EditarPerfil() {
     return () => { isMounted = false; };
   }, []);
 
-  // 💉 CIRURGIA MESTRE: Nova função de Upload direto pro Cloudinary (sem compressão forçada)
+  // ─── UPLOAD COM OTIMIZAÇÃO VIA URL DO CLOUDINARY ──────────────────────────
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
@@ -247,10 +246,9 @@ export default function EditarPerfil() {
 
       const formData = new FormData();
       formData.append('file', file);
-      // O passe livre configurado no Cloudinary
-      formData.append('upload_preset', 'intermatch_fotos'); 
+      formData.append('upload_preset', 'intermatch_fotos');
 
-      const cloudName = 'dcsiucytm'; 
+      const cloudName = 'dcsiucytm';
       const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
 
       const response = await fetch(url, {
@@ -263,14 +261,20 @@ export default function EditarPerfil() {
       }
 
       const data = await response.json();
-      
-      // O Cloudinary nos devolve a URL segura (https) da foto já hospedada
-      set('foto_url', data.secure_url);
+
+      // Injeta transformações na URL para otimizar a imagem entregue:
+      // c_limit,w_800 → limita a largura a 800px (ideal para mobile)
+      // q_auto        → compressão automática sem perda visível de qualidade
+      // f_auto        → converte para WebP/AVIF automaticamente (muito mais leve)
+      const urlOriginal = data.secure_url;
+      const urlOtimizada = urlOriginal.replace('/upload/', '/upload/c_limit,w_800,q_auto,f_auto/');
+
+      set('foto_url', urlOtimizada);
 
     } catch (err: any) {
       alert('Erro no upload: ' + err.message);
-    } finally { 
-      setUploading(false); 
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -287,7 +291,7 @@ export default function EditarPerfil() {
         curso: f.curso,
         instituicao: f.instituicao,
         insta: f.insta,
-        foto_url: f.foto_url, // Salva o link do Cloudinary puro no Supabase
+        foto_url: f.foto_url,
         ver_homem: f.ver_homem,
         ver_mulher: f.ver_mulher,
         ver_nb: f.ver_nb,
