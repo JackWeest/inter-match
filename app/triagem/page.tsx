@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense, useCallback } from 'react';
-import Image from 'next/image';
+// 💉 CIRURGIA 1: Removido o import chato do 'next/image'
 import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { X, Heart, User, AtSign, RotateCcw } from 'lucide-react';
@@ -113,9 +113,10 @@ function MatchesContent() {
                 >
                   <div className="w-full aspect-[4/5] bg-zinc-900 relative">
                     {p.foto_url ? (
-                      <Image src={p.foto_url} alt={p.nome} fill className="object-cover" priority />
+                      /* 💉 CIRURGIA 2: Substituído o <Image /> do Next por um <img> padrão */
+                      <img src={p.foto_url} alt={p.nome} className="w-full h-full object-cover absolute inset-0" />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-white/5">
+                      <div className="w-full h-full flex flex-col items-center justify-center text-white/5 absolute inset-0">
                         <User size={100} />
                       </div>
                     )}
