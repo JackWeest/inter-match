@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
@@ -20,6 +20,14 @@ export const metadata: Metadata = {
   description: "Triagem da Festa - UFC Sobral",
 };
 
+// ✅ Viewport separado do metadata (padrão Next.js 14+)
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1, // impede zoom automático no iOS
+  userScalable: false,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,29 +37,16 @@ export default function RootLayout({
     <html
       lang="pt-br"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full`}
+      className={`${geistSans.variable} ${geistMono.variable}`} // ✅ removido h-full
     >
-      {/* 💉 INFORME: Body totalmente transparente para não criar "muros" */}
       <body className="min-h-screen antialiased flex flex-col relative bg-transparent">
-        
-        {/* 1. O "Leão de Chácara" envolve a lógica e os componentes */}
         <Catraca>
-          
-          {/* 💉 O Fundo agora vive aqui dentro. Como a Catraca retorna apenas um Fragment <>,
-              o Background vai se posicionar em relação ao Body. */}
           <Background />
-          
-          {/* 2. Conteúdo Principal */}
-          {/* relative z-10 garante que o conteúdo "boie" por cima do fundo */}
           <main className="flex-1 w-full relative z-10 bg-transparent">
             {children}
           </main>
-          
-          {/* 3. A Barra de Navegação Fixa */}
           <Navbar />
-          
         </Catraca>
-        
       </body>
     </html>
   );

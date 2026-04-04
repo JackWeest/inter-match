@@ -66,19 +66,36 @@ export default function PreviewPerfil() {
 
   if (!profile) return null;
 
+  // Altura da navbar + safe area
+  const navbarHeight = 'calc(64px + max(1.5rem, env(safe-area-inset-bottom)))';
+
   return (
     <>
-      {/* FUNDOS */}
       <div className="fixed inset-0 bg-[#0f051a] -z-20 pointer-events-none" />
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
 
-      {/* ✅ CORREÇÃO: pb usa o mesmo cálculo da navbar para nunca colidir */}
-<main className="relative w-full flex flex-col items-center justify-start pt-6 pb-[calc(64px+max(1.5rem,env(safe-area-inset-bottom))+1.5rem)] md:min-h-[100dvh] md:justify-center md:py-10 px-6">
-        
-        <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 w-full max-w-4xl animate-in fade-in zoom-in-95 duration-500 mt-8 md:mt-0 z-10">
-          
-          {/* CARD DE PREVIEW */}
-          <div className="relative w-[280px] md:w-[340px] aspect-[3/4] rounded-[2.5rem] overflow-hidden border-4 border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-zinc-900 shrink-0 group pointer-events-auto">
+      {/* MOBILE: ocupa exato o espaço disponível acima da navbar, sem scroll */}
+      {/* DESKTOP: centralizado normalmente */}
+      <main
+        className="relative w-full px-6 md:min-h-[100dvh] md:flex md:items-center md:justify-center md:py-10"
+        style={{
+          // Mobile: altura exata da tela menos a navbar
+          height: `calc(100dvh - ${navbarHeight})`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {/* Wrapper mobile: coluna que se adapta à altura disponível */}
+        <div
+          className="flex flex-col items-center w-full max-w-[300px] animate-in fade-in zoom-in-95 duration-500 md:hidden"
+          style={{ height: '100%', gap: '3%', paddingTop: '4%', paddingBottom: '4%' }}
+        >
+          {/* CARD — ocupa o espaço restante após os botões */}
+          <div
+            className="relative w-full rounded-[2rem] overflow-hidden border-4 border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-zinc-900 group"
+            style={{ flex: '1 1 0', minHeight: 0 }}
+          >
             {profile.foto_url ? (
               <img src={profile.foto_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Sua foto" />
             ) : (
@@ -87,20 +104,83 @@ export default function PreviewPerfil() {
                 <span className="text-[10px] font-black uppercase tracking-widest">Sem Imagem</span>
               </div>
             )}
-            
             <div className="absolute inset-0 bg-gradient-to-t from-[#0f051a] via-[#0f051a]/40 to-transparent opacity-90 pointer-events-none" />
-            
+            <div className="absolute bottom-5 left-5 right-5 flex flex-col gap-1">
+              <h2 className="text-2xl font-black italic text-white leading-none truncate drop-shadow-lg uppercase">
+                {profile.nome || 'Anônimo'}, {profile.idade || '?'}
+              </h2>
+              {profile.mostrar_curso && (profile.curso || profile.instituicao) && (
+                <p className="text-orange-400 text-[10px] font-black uppercase tracking-[0.2em] truncate leading-tight">
+                  {[profile.curso, profile.instituicao].filter(Boolean).join(' · ')}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {profile.genero && (
+                  <span className="bg-white/5 backdrop-blur-md border border-white/10 text-white/70 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
+                    {profile.genero}
+                  </span>
+                )}
+                {profile.mostrar_orientacao && profile.orientacao && (
+                  <span className="bg-orange-500/20 backdrop-blur-md border border-orange-500/20 text-orange-400 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
+                    {profile.orientacao}
+                  </span>
+                )}
+              </div>
+              {profile.insta && (
+                <div className="flex items-center gap-1.5 mt-3 text-white/60 font-bold text-xs bg-black/40 w-fit px-3 py-1.5 rounded-full border border-white/5 backdrop-blur-sm">
+                  <AtSign size={11} className="text-orange-500" />
+                  <span className="tracking-wide">@{profile.insta.replace('@', '')}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* BOTÕES — altura fixa, não encolhem */}
+          <div className="w-full flex flex-col gap-2 shrink-0">
+            <button
+              onClick={() => router.push('/perfil/editar')}
+              className="w-full h-12 rounded-2xl font-black flex items-center justify-center gap-3 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-orange-500 text-white shadow-lg shadow-orange-500/20 hover:bg-orange-400 border border-orange-400/50"
+            >
+              <Edit3 size={16} strokeWidth={2.5} /> Editar Perfil
+            </button>
+            <div className="flex gap-2 w-full">
+              <button
+                onClick={handleSair}
+                className="flex-1 h-12 rounded-2xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-[#1a0f30]/40 backdrop-blur-md text-white/50 hover:text-white hover:bg-[#1a0f30]/60 border border-white/5"
+              >
+                <LogOut size={15} strokeWidth={2.5} /> Sair
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="flex-1 h-12 rounded-2xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-red-500/10 backdrop-blur-md text-red-500 hover:bg-red-500/20 border border-red-500/20"
+              >
+                <Trash2 size={15} strokeWidth={2.5} /> Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* DESKTOP: layout lado a lado, tamanho fixo */}
+        <div className="hidden md:flex md:flex-row md:items-center md:justify-center md:gap-16 md:max-w-4xl w-full animate-in fade-in zoom-in-95 duration-500">
+          <div className="relative w-[340px] aspect-[3/4] rounded-[2.5rem] overflow-hidden border-4 border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-zinc-900 shrink-0 group">
+            {profile.foto_url ? (
+              <img src={profile.foto_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Sua foto" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-white/10 gap-3 bg-zinc-900">
+                <div className="text-6xl">👤</div>
+                <span className="text-[10px] font-black uppercase tracking-widest">Sem Imagem</span>
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0f051a] via-[#0f051a]/40 to-transparent opacity-90 pointer-events-none" />
             <div className="absolute bottom-6 left-6 right-6 flex flex-col gap-1">
               <h2 className="text-3xl font-black italic text-white leading-none truncate drop-shadow-lg uppercase">
                 {profile.nome || 'Anônimo'}, {profile.idade || '?'}
               </h2>
-              
               {profile.mostrar_curso && (profile.curso || profile.instituicao) && (
                 <p className="text-orange-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2 truncate leading-tight">
                   {[profile.curso, profile.instituicao].filter(Boolean).join(' · ')}
                 </p>
               )}
-
               <div className="flex flex-wrap gap-2 mt-1">
                 {profile.genero && (
                   <span className="bg-white/5 backdrop-blur-md border border-white/10 text-white/70 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
@@ -113,47 +193,42 @@ export default function PreviewPerfil() {
                   </span>
                 )}
               </div>
-
               {profile.insta && (
-                <div className="flex items-center gap-1.5 mt-4 text-white/60 font-bold text-xs bg-black/40 w-fit px-4 py-2 rounded-full border border-white/5 backdrop-blur-sm pointer-events-auto">
-                  <AtSign size={12} className="text-orange-500" /> 
-                  <span className="tracking-wide">@{profile.insta.replace('@', '')}</span> 
+                <div className="flex items-center gap-1.5 mt-4 text-white/60 font-bold text-xs bg-black/40 w-fit px-4 py-2 rounded-full border border-white/5 backdrop-blur-sm">
+                  <AtSign size={12} className="text-orange-500" />
+                  <span className="tracking-wide">@{profile.insta.replace('@', '')}</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* PAINEL DE CONTROLE */}
-          <div className="w-[280px] md:w-[320px] flex flex-col gap-3 shrink-0 pointer-events-auto">
-            
-            <button 
-              onClick={() => router.push('/perfil/editar')} 
+          <div className="w-[320px] flex flex-col gap-3 shrink-0">
+            <button
+              onClick={() => router.push('/perfil/editar')}
               className="w-full h-14 rounded-2xl font-black flex items-center justify-center gap-3 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-orange-500 text-white shadow-lg shadow-orange-500/20 hover:bg-orange-400 border border-orange-400/50"
             >
-              <Edit3 size={18} strokeWidth={2.5}/> Editar Perfil
+              <Edit3 size={18} strokeWidth={2.5} /> Editar Perfil
             </button>
-            
-            <div className="w-full h-px bg-white/5 my-2" /> 
-            
-            <button 
-              onClick={handleSair}
-              className="w-full h-14 rounded-2xl font-black flex items-center justify-center gap-3 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-[#1a0f30]/40 backdrop-blur-md text-white/50 hover:text-white hover:bg-[#1a0f30]/60 border border-white/5 shadow-inner"
-            >
-              <LogOut size={18} strokeWidth={2.5}/> Desconectar
-            </button>
-
-            <button 
-              onClick={() => setShowDeleteModal(true)}
-              className="w-full h-14 rounded-2xl font-black flex items-center justify-center gap-3 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-red-500/10 backdrop-blur-md text-red-500 hover:bg-red-500/20 border border-red-500/20 mt-2"
-            >
-              <Trash2 size={18} strokeWidth={2.5}/> Excluir Conta
-            </button>
+            <div className="w-full h-px bg-white/5" />
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={handleSair}
+                className="flex-1 h-14 rounded-2xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-[#1a0f30]/40 backdrop-blur-md text-white/50 hover:text-white hover:bg-[#1a0f30]/60 border border-white/5 shadow-inner"
+              >
+                <LogOut size={16} strokeWidth={2.5} /> Sair
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="flex-1 h-14 rounded-2xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-red-500/10 backdrop-blur-md text-red-500 hover:bg-red-500/20 border border-red-500/20"
+              >
+                <Trash2 size={16} strokeWidth={2.5} /> Excluir
+              </button>
+            </div>
           </div>
-
         </div>
       </main>
 
-      {/* MODAL DE CONFIRMAÇÃO */}
+      {/* MODAL */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
           <div className="absolute inset-0" onClick={() => !deleting && setShowDeleteModal(false)} />
