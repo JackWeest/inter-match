@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, Loader2, AtSign } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 
 type FormData = {
   nome: string;
@@ -185,13 +186,35 @@ export default function EditarPerfil() {
       setUploading(true);
       const file = e.target.files?.[0];
       if (!file) return;
+
+      // Opções de compressão e conversão para WebP
+      const options = {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 1024,
+        useWebWorker: true,
+        fileType: 'image/webp',
+      };
+
+      const compressedFile = await imageCompression(file, options);
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const ext = file.name.split('.').pop();
-      const path = `public/${user.id}-${Date.now()}.${ext}`;
-      await supabase.storage.from('fotos').upload(path, file);
+      
+      // CIRURGIA: O nome do arquivo agora é FIXO (apenas o ID do usuário)
+      const path = `public/${user.id}.webp`;
+      
+      // CIRURGIA: Adicionamos o { upsert: true } para esmagar a foto antiga
+      const { error } = await supabase.storage.from('fotos').upload(path, compressedFile, {
+        upsert: true
+      });
+
+      if (error) throw error;
+      
       const { data: { publicUrl } } = supabase.storage.from('fotos').getPublicUrl(path);
-      set('foto_url', publicUrl);
+      
+      // CIRURGIA: "Cache Buster". Colocamos um ?v=tempo no final do link.
+      set('foto_url', `${publicUrl}?v=${Date.now()}`);
+
     } catch (err: any) {
       alert('Erro no upload: ' + err.message);
     } finally { setUploading(false); }

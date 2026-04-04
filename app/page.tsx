@@ -144,7 +144,7 @@ export default function Home() {
     } else if (data.user) {
       localStorage.setItem('supabase.auth.token', 'logado');
       const { data: profile } = await supabase.from('profiles').select('id').eq('id', data.user.id).single();
-      router.push(profile ? '/triagem' : '/perfil/editar');
+      router.push(profile ? '/triagem' : '/');
     }
     setLoading(false);
   };
