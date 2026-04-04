@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, ArrowRight, Loader2, AtSign, Check, ChevronDown } from 'lucide-react';
-import imageCompression from 'browser-image-compression';
+// 💉 CIRURGIA: Removido o import do browser-image-compression!
 
 // ─── DADOS DAS ATLÉTICAS ───────────────────────────────────────────────────────
 const ATLETICAS = {
@@ -472,7 +472,6 @@ export default function CriarPerfil() {
 
   const set = (key: keyof OnboardingData, val: any) => setF(prev => ({ ...prev, [key]: val }));
 
-  // 💉 CIRURGIA 1: Sonda de Dados - Puxa o Instagram direto do banco de dados ao carregar
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -487,11 +486,8 @@ export default function CriarPerfil() {
     return () => { isMounted = false; };
   }, []);
 
-  // Calcular steps totais e step atual
-  // Steps: 1=tipo, 2=atletica(se membro), 3=participacao, 4=perfil
   const totalSteps = f.tipo === 'atletica' ? 4 : f.tipo === 'convidado' ? 3 : 4;
 
-  // 💉 CIRURGIA 2: Bloqueio de Segurança - Exige que o f.insta não esteja vazio
   const canAdvance = () => {
     if (step === 1) return !!f.tipo;
     if (step === 2 && f.tipo === 'atletica') return !!f.atletica && !!f.cargo;
@@ -523,23 +519,41 @@ export default function CriarPerfil() {
 
   const isLastStep = (f.tipo === 'atletica' && step === 4) || (f.tipo === 'convidado' && step === 3);
 
+  // 💉 CIRURGIA MESTRE: Nova função de Upload direto pro Cloudinary
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
       const file = e.target.files?.[0];
       if (!file) return;
-      const options = { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true, fileType: 'image/webp' };
-      const compressedFile = await imageCompression(file, options);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const path = `public/${user.id}.webp`;
-      const { error } = await supabase.storage.from('fotos').upload(path, compressedFile, { upsert: true });
-      if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage.from('fotos').getPublicUrl(path);
-      set('foto_url', `${publicUrl}?v=${Date.now()}`);
+
+      const formData = new FormData();
+      formData.append('file', file);
+      // Aqui usamos o nome exato do preset que você criou lá no painel
+      formData.append('upload_preset', 'intermatch_fotos'); 
+
+      // ⚠️ IMPORTANTE: Substitua 'SEU_CLOUD_NAME_AQUI' pelo seu nome real lá do Cloudinary!
+      const cloudName = 'dcsiucytm'; 
+      const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha de conexão com o servidor de imagens.');
+      }
+
+      const data = await response.json();
+      
+      // O Cloudinary nos devolve a URL segura (https) da foto já hospedada
+      set('foto_url', data.secure_url);
+
     } catch (err: any) {
       alert('Erro no upload: ' + err.message);
-    } finally { setUploading(false); }
+    } finally { 
+      setUploading(false); 
+    }
   };
 
   const salvar = async () => {
@@ -555,6 +569,7 @@ export default function CriarPerfil() {
         curso: f.curso,
         instituicao: f.instituicao,
         insta: f.insta,
+        // O Supabase agora vai apenas receber o link de texto gerado pelo Cloudinary!
         foto_url: f.foto_url,
         ver_homem: f.ver_homem,
         ver_mulher: f.ver_mulher,
@@ -577,7 +592,6 @@ export default function CriarPerfil() {
   const completion = calcCompletion(f);
   const showPreview = isLastStep;
 
-  // Variável extra para checar se o formulário do último step está completo
   const isReadyToSave = !!f.nome && !!f.insta;
 
   return (

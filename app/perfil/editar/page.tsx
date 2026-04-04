@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, Loader2, AtSign, ChevronDown } from 'lucide-react';
-import imageCompression from 'browser-image-compression';
+// 💉 CIRURGIA: Removido o import do compressor de imagem
 
 // ─── DADOS DAS ATLÉTICAS (igual ao onboarding) ────────────────────────────────
 const ATLETICAS = {
@@ -238,23 +238,40 @@ export default function EditarPerfil() {
     return () => { isMounted = false; };
   }, []);
 
+  // 💉 CIRURGIA MESTRE: Nova função de Upload direto pro Cloudinary (sem compressão forçada)
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
       const file = e.target.files?.[0];
       if (!file) return;
-      const options = { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true, fileType: 'image/webp' };
-      const compressedFile = await imageCompression(file, options);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const path = `public/${user.id}.webp`;
-      const { error } = await supabase.storage.from('fotos').upload(path, compressedFile, { upsert: true });
-      if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage.from('fotos').getPublicUrl(path);
-      set('foto_url', `${publicUrl}?v=${Date.now()}`);
+
+      const formData = new FormData();
+      formData.append('file', file);
+      // O passe livre configurado no Cloudinary
+      formData.append('upload_preset', 'intermatch_fotos'); 
+
+      const cloudName = 'dcsiucytm'; 
+      const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha de conexão com o servidor de imagens.');
+      }
+
+      const data = await response.json();
+      
+      // O Cloudinary nos devolve a URL segura (https) da foto já hospedada
+      set('foto_url', data.secure_url);
+
     } catch (err: any) {
       alert('Erro no upload: ' + err.message);
-    } finally { setUploading(false); }
+    } finally { 
+      setUploading(false); 
+    }
   };
 
   const salvar = async () => {
@@ -270,7 +287,7 @@ export default function EditarPerfil() {
         curso: f.curso,
         instituicao: f.instituicao,
         insta: f.insta,
-        foto_url: f.foto_url,
+        foto_url: f.foto_url, // Salva o link do Cloudinary puro no Supabase
         ver_homem: f.ver_homem,
         ver_mulher: f.ver_mulher,
         ver_nb: f.ver_nb,
