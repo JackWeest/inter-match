@@ -142,7 +142,6 @@ export default function Home() {
     if (error) {
       alert('Erro no acesso: ' + error.message);
     } else if (data.user) {
-      localStorage.setItem('supabase.auth.token', 'logado');
       const { data: profile } = await supabase.from('profiles').select('id').eq('id', data.user.id).single();
       // 💉 CIRURGIA FEITA AQUI:
       router.push(profile ? '/triagem' : '/perfil/criar');
@@ -154,9 +153,8 @@ export default function Home() {
 
   return (
     <>
-      {/* 💉 FUNDOS GLOBAIS */}
-      <div className="fixed inset-0 bg-[#0f051a] -z-20 pointer-events-none" />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
+      {/* 💉 FUNDO GLOBAL OTIMIZADO */}
+      <div className="fixed inset-0 bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] -z-20 pointer-events-none" style={{ transform: 'translateZ(0)' }} />
 
       {/* 📱 MOBILE (Conteúdo centralizado normal) */}
       <main className="flex md:hidden min-h-screen flex-col items-center justify-center p-6 text-center relative z-10">

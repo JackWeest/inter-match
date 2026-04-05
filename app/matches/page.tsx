@@ -1,56 +1,99 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AtSign, Heart, ChevronRight, X, User, RotateCcw, ArrowLeft } from 'lucide-react';
-// 💉 CIRURGIA: Removido o import do 'next/image'
+import { createCache } from '../../lib/cache';
+import CachedImage from '../components/CachedImage';
 
-export default function MeusMatches() {
-  const [matches, setMatches] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedMatch, setSelectedMatch] = useState<any>(null);
-  const [flipped, setFlipped] = useState(false);
+type MatchProfile = {
+  id: string;
+  nome: string;
+  idade: number;
+  genero: string;
+  curso: string;
+  instituicao: string;
+  insta: string;
+  foto_url: string;
+  atletica: string;
+  cargo_atletica: string;
+  tipo_participacao: string;
+  mostrar_curso: boolean;
+};
+
+const matchesCache = createCache<MatchProfile[]>('matches', 120_000);
+
+export const dynamic = 'force-dynamic';
+
+function MatchesContent() {
   const router = useRouter();
-  
-  const matchesLiberados = true; 
+  const searchParams = useSearchParams();
+  const [showToast, setShowToast] = useState(false);
+  const [matches, setMatches] = useState<MatchProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMatch, setSelectedMatch] = useState<MatchProfile | null>(null);
+  const [flipped, setFlipped] = useState(false);
+  const matchesLiberados = true;
+  const userIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     let montado = true;
-    if (matchesLiberados && montado) {
-      buscarMatchesMutuos();
-    }
+    const buscarMatches = async () => {
+      try {
+        const cached = matchesCache.get();
+        if (cached) {
+          if (montado) { setMatches(cached); setLoading(false); return; }
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
+        if (!user) return;
+        userIdRef.current = user.id;
+
+        const { data: matchesMutuos, error } = await supabase
+          .rpc('get_matches_mutuos', { p_user_id: user.id });
+
+        if (error) {
+          console.error('Erro matches RPC:', error);
+        } else if (matchesMutuos && montado) {
+          const typed = matchesMutuos as MatchProfile[];
+          matchesCache.set(typed);
+          setMatches(typed);
+        }
+      } catch (error) {
+        console.error('Erro na busca:', error);
+      } finally {
+        if (montado) setLoading(false);
+      }
+    };
+
+    if (matchesLiberados) buscarMatches();
     return () => { montado = false; };
   }, []);
 
-  // Resetar o flip ao fechar o modal
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (searchParams.get('success') === 'true') {
+      setShowToast(true);
+      timeoutId = setTimeout(() => setShowToast(false), 4000);
+    }
+    return () => { if (timeoutId) clearTimeout(timeoutId); };
+  }, [searchParams]);
+
   useEffect(() => {
     if (!selectedMatch) setFlipped(false);
   }, [selectedMatch]);
 
-  const buscarMatchesMutuos = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const user = session?.user;
-      if (!user) return;
-
-      const { data: meusLikes } = await supabase.from('likes').select('receiver_id').eq('sender_id', user.id).eq('liked', true);
-      const { data: likesRecebidos } = await supabase.from('likes').select('sender_id').eq('receiver_id', user.id).eq('liked', true);
-
-      if (meusLikes && likesRecebidos) {
-        const idsMeusLikes = meusLikes.map(l => l.receiver_id);
-        const idsLikesRecebidos = likesRecebidos.map(l => l.sender_id);
-        const idsMatches = idsMeusLikes.filter(id => idsLikesRecebidos.includes(id));
-
-        if (idsMatches.length > 0) {
-          const { data: perfisMatches } = await supabase.from('profiles').select('*').in('id', idsMatches);
-          setMatches(perfisMatches || []);
-        }
-      }
-    } catch (error) {
-      console.error("Erro na busca:", error);
-    } finally {
-      setLoading(false);
+  const refreshMatches = async () => {
+    matchesCache.invalidate();
+    if (!userIdRef.current) return;
+    const { data: matchesMutuos } = await supabase
+      .rpc('get_matches_mutuos', { p_user_id: userIdRef.current });
+    if (matchesMutuos) {
+      const typed = matchesMutuos as MatchProfile[];
+      matchesCache.set(typed);
+      setMatches(typed);
     }
   };
 
@@ -60,7 +103,13 @@ export default function MeusMatches() {
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
 
       <main className="min-h-[100dvh] bg-transparent pb-40 flex flex-col items-center px-6 relative z-10 overflow-x-hidden">
-        
+
+        {showToast && (
+          <div className="fixed top-4 z-[100] animate-in slide-in-from-top duration-500 bg-orange-500 text-white px-6 py-3 rounded-full shadow-2xl border border-white/20 font-black italic uppercase text-[10px] tracking-widest">
+            🔥 Perfil pronto pro rolê!
+          </div>
+        )}
+
         {/* HEADER */}
         <div className="w-full max-w-sm pt-10 pb-6 flex flex-col items-center text-center">
           <h1 className="text-2xl font-black text-white flex items-center gap-2 drop-shadow-lg italic uppercase tracking-tight">
@@ -78,14 +127,14 @@ export default function MeusMatches() {
         ) : matches.length > 0 ? (
           <div className="w-full max-w-sm flex flex-col gap-3">
             {matches.map((match) => (
-              <div 
-                key={match.id} 
+              <div
+                key={match.id}
                 onClick={() => setSelectedMatch(match)}
-                className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.08] backdrop-blur-md p-3 rounded-[1.5rem] shadow-lg border border-white/5 active:scale-[0.98] transition-all group cursor-pointer"
+                className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.08]  p-3 rounded-[1.5rem] shadow-lg border border-white/5 active:scale-[0.98] transition-all group cursor-pointer"
               >
                 <div className="relative w-14 h-14 shrink-0 rounded-2xl overflow-hidden border border-white/10 group-hover:border-orange-500/50 transition-colors bg-zinc-900">
                   {match.foto_url ? (
-                    <img src={match.foto_url} alt={match.nome} className="w-full h-full object-cover" />
+                    <CachedImage src={match.foto_url} alt={match.nome} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-white/10"><User size={20} /></div>
                   )}
@@ -103,7 +152,7 @@ export default function MeusMatches() {
           </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-10">
-            <div className="bg-white/5 backdrop-blur-sm p-8 rounded-[2rem] border border-dashed border-white/10 text-center">
+            <div className="bg-white/5  p-8 rounded-[2rem] border border-dashed border-white/10 text-center">
               <p className="text-white/20 font-black uppercase text-[10px] tracking-[0.2em] leading-relaxed">
                 Nenhum match detectado... <br/>
                 <span className="text-orange-500/50">volte para a triagem! 🚑</span>
@@ -115,11 +164,11 @@ export default function MeusMatches() {
 
       {/* ── MODAL DE PREVIEW ── */}
       {selectedMatch && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/95  animate-in fade-in duration-300">
           <div className="absolute inset-0" onClick={() => setSelectedMatch(null)} />
-          
-          <div 
-            className="relative w-full max-w-sm cursor-pointer" 
+
+          <div
+            className="relative w-full max-w-sm cursor-pointer"
             style={{ perspective: '1200px' }}
             onClick={() => setFlipped(!flipped)}
           >
@@ -138,8 +187,7 @@ export default function MeusMatches() {
               >
                 <div className="absolute inset-0 z-0">
                   {selectedMatch.foto_url ? (
-                    /* 💉 CIRURGIA: Componente <Image /> trocado pelo <img> com as mesmas classes para preencher o card */
-                    <img src={selectedMatch.foto_url} alt={selectedMatch.nome} className="w-full h-full object-cover absolute inset-0" />
+                    <CachedImage src={selectedMatch.foto_url} alt={selectedMatch.nome} className="w-full h-full object-cover absolute inset-0" />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-[#1a1a1a] text-white/5"><User size={80} /></div>
                   )}
@@ -147,16 +195,14 @@ export default function MeusMatches() {
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent z-10 pointer-events-none" />
 
-                {/* BOTÃO FLIP ESCURECIDO (ESQUERDA) */}
-                <div className="absolute top-5 left-5 z-30 bg-black/80 backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-2xl transition-all">
+                <div className="absolute top-5 left-5 z-30 bg-black/80  border border-white/20 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-2xl transition-all">
                   <RotateCcw size={10} className="text-orange-500" />
                   <span className="text-[8px] font-black uppercase tracking-widest text-white">Ver mais</span>
                 </div>
 
-                {/* FECHAR (DIREITA) */}
-                <button 
+                <button
                   onClick={(e) => { e.stopPropagation(); setSelectedMatch(null); }}
-                  className="absolute top-5 right-5 z-30 w-10 h-10 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-red-500 transition-colors"
+                  className="absolute top-5 right-5 z-30 w-10 h-10 rounded-full bg-black/40  border border-white/10 flex items-center justify-center text-white hover:bg-red-500 transition-colors"
                 >
                   <X size={20} />
                 </button>
@@ -170,14 +216,14 @@ export default function MeusMatches() {
                       {selectedMatch.atletica || 'Convidado'}
                     </p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      <span className="px-2.5 py-0.5 bg-white/10 backdrop-blur-md rounded-full text-[8px] font-black uppercase text-white/80 border border-white/10">
+                      <span className="px-2.5 py-0.5 bg-white/10  rounded-full text-[8px] font-black uppercase text-white/80 border border-white/10">
                         {selectedMatch.genero}
                       </span>
                     </div>
                   </div>
 
                   {selectedMatch.insta && (
-                    <a 
+                    <a
                       href={`https://instagram.com/${selectedMatch.insta.replace('@', '')}`}
                       target="_blank"
                       onClick={(e) => e.stopPropagation()}
@@ -191,18 +237,17 @@ export default function MeusMatches() {
 
               {/* ── VERSO DO CARD ── */}
               <div
-                className="absolute inset-0 w-full aspect-[4/5] bg-[#0f051a] backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/10 flex flex-col overflow-hidden"
+                className="absolute inset-0 w-full aspect-[4/5] bg-[#0f051a]  rounded-[2.5rem] shadow-2xl border border-white/10 flex flex-col overflow-hidden"
                 style={{
                   backfaceVisibility: 'hidden',
                   WebkitBackfaceVisibility: 'hidden',
                   transform: 'rotateY(180deg)',
                 }}
               >
-                {/* Header Verso */}
                 <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-white/5">
                   <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-zinc-900">
-                    {selectedMatch.foto_url 
-                      ? <img src={selectedMatch.foto_url} alt={selectedMatch.nome} className="w-full h-full object-cover" /> 
+                    {selectedMatch.foto_url
+                      ? <CachedImage src={selectedMatch.foto_url} alt={selectedMatch.nome} className="w-full h-full object-cover" />
                       : <div className="w-full h-full flex items-center justify-center text-white/10"><User size={20} /></div>
                     }
                   </div>
@@ -212,15 +257,13 @@ export default function MeusMatches() {
                   </div>
                 </div>
 
-                {/* BOTÃO VOLTAR (POSICIONADO À DIREITA NO VERSO) */}
-                <button 
+                <button
                   onClick={(e) => { e.stopPropagation(); setFlipped(false); }}
-                  className="absolute top-5 right-5 z-30 w-10 h-10 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 flex items-center justify-center text-orange-500 hover:bg-orange-500 hover:text-white transition-colors shadow-2xl"
+                  className="absolute top-5 right-5 z-30 w-10 h-10 rounded-full bg-black/80  border border-white/10 flex items-center justify-center text-orange-500 hover:bg-orange-500 hover:text-white transition-colors shadow-2xl"
                 >
                   <ArrowLeft size={20} />
                 </button>
 
-                {/* Conteúdo Verso */}
                 <div className="flex-1 px-6 py-5 flex flex-col gap-5 overflow-y-auto custom-scrollbar relative z-10">
                   <div>
                     <p className="text-[8px] font-black uppercase tracking-widest text-white/20 mb-1.5">Acadêmico</p>
@@ -256,5 +299,13 @@ export default function MeusMatches() {
         </div>
       )}
     </>
+  );
+}
+
+export default function Matches() {
+  return (
+    <Suspense fallback={<div className="h-screen w-full bg-[#0f051a]" />}>
+      <MatchesContent />
+    </Suspense>
   );
 }

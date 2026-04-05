@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, ArrowRight, Loader2, AtSign, Check, ChevronDown } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 
 // ─── DADOS DAS ATLÉTICAS ───────────────────────────────────────────────────────
 const ATLETICAS = {
@@ -175,8 +176,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-const inputCls = 'w-full bg-black/60 hover:bg-black/70 border border-white/10 rounded-xl px-4 py-4 focus:border-orange-500/50 focus:bg-black/70 outline-none text-white font-bold text-sm transition-all placeholder:text-white/25 shadow-inner backdrop-blur-md';
-const selectCls = 'w-full bg-black/60 hover:bg-black/70 border border-white/10 rounded-xl px-4 py-4 focus:border-orange-500/50 outline-none text-white font-bold text-sm transition-all cursor-pointer appearance-none shadow-inner backdrop-blur-md';
+const inputCls = 'w-full bg-black/60 hover:bg-black/70 border border-white/10 rounded-xl px-4 py-4 focus:border-orange-500/50 focus:bg-black/70 outline-none text-white font-bold text-sm transition-all placeholder:text-white/25 shadow-inner ';
+const selectCls = 'w-full bg-black/60 hover:bg-black/70 border border-white/10 rounded-xl px-4 py-4 focus:border-orange-500/50 outline-none text-white font-bold text-sm transition-all cursor-pointer appearance-none shadow-inner ';
 
 // ─── STEP INDICATOR ───────────────────────────────────────────────────────────
 function StepBar({ step, total }: { step: number; total: number }) {
@@ -202,7 +203,7 @@ function Step1({ f, set }: { f: OnboardingData; set: (k: keyof OnboardingData, v
       <div className="grid grid-cols-1 gap-3 mt-2">
         <button
           onClick={() => set('tipo', 'atletica')}
-          className={`group relative overflow-hidden rounded-2xl border p-6 text-left backdrop-blur-md shadow-lg active:scale-[0.98] transition-all duration-300 bg-black/60 ${f.tipo === 'atletica' ? 'border-orange-500/60 ring-1 ring-inset ring-orange-500/20' : 'border-white/10 hover:border-white/25 hover:bg-black/70'}`}
+          className={`group relative overflow-hidden rounded-2xl border p-6 text-left  shadow-lg active:scale-[0.98] transition-all duration-300 bg-black/60 ${f.tipo === 'atletica' ? 'border-orange-500/60 ring-1 ring-inset ring-orange-500/20' : 'border-white/10 hover:border-white/25 hover:bg-black/70'}`}
         >
           <div className="flex items-start justify-between">
             <div>
@@ -218,7 +219,7 @@ function Step1({ f, set }: { f: OnboardingData; set: (k: keyof OnboardingData, v
 
         <button
           onClick={() => set('tipo', 'convidado')}
-          className={`group relative overflow-hidden rounded-2xl border p-6 text-left backdrop-blur-md shadow-lg active:scale-[0.98] transition-all duration-300 bg-black/60 ${f.tipo === 'convidado' ? 'border-orange-500/60 ring-1 ring-inset ring-orange-500/20' : 'border-white/10 hover:border-white/25 hover:bg-black/70'}`}
+          className={`group relative overflow-hidden rounded-2xl border p-6 text-left  shadow-lg active:scale-[0.98] transition-all duration-300 bg-black/60 ${f.tipo === 'convidado' ? 'border-orange-500/60 ring-1 ring-inset ring-orange-500/20' : 'border-white/10 hover:border-white/25 hover:bg-black/70'}`}
         >
           <div className="flex items-start justify-between">
             <div>
@@ -307,7 +308,7 @@ function StepParticipacao({ f, set }: { f: OnboardingData; set: (k: keyof Onboar
       <div className="grid grid-cols-1 gap-3 mt-2">
         <button
           onClick={() => set('participacao', 'festa')}
-          className={`rounded-2xl border p-6 text-left backdrop-blur-md shadow-lg active:scale-[0.98] transition-all duration-300 bg-black/60 ${f.participacao === 'festa' ? 'border-yellow-500/60 ring-1 ring-inset ring-yellow-500/20' : 'border-white/10 hover:border-white/25 hover:bg-black/70'}`}
+          className={`rounded-2xl border p-6 text-left  shadow-lg active:scale-[0.98] transition-all duration-300 bg-black/60 ${f.participacao === 'festa' ? 'border-yellow-500/60 ring-1 ring-inset ring-yellow-500/20' : 'border-white/10 hover:border-white/25 hover:bg-black/70'}`}
         >
           <div className="flex items-start justify-between">
             <div>
@@ -323,7 +324,7 @@ function StepParticipacao({ f, set }: { f: OnboardingData; set: (k: keyof Onboar
 
         <button
           onClick={() => set('participacao', 'completo')}
-          className={`rounded-2xl border p-6 text-left backdrop-blur-md shadow-lg active:scale-[0.98] transition-all duration-300 bg-black/60 ${f.participacao === 'completo' ? 'border-green-500/60 ring-1 ring-inset ring-green-500/20' : 'border-white/10 hover:border-white/25 hover:bg-black/70'}`}
+          className={`rounded-2xl border p-6 text-left  shadow-lg active:scale-[0.98] transition-all duration-300 bg-black/60 ${f.participacao === 'completo' ? 'border-green-500/60 ring-1 ring-inset ring-green-500/20' : 'border-white/10 hover:border-white/25 hover:bg-black/70'}`}
         >
           <div className="flex items-start justify-between">
             <div>
@@ -441,7 +442,7 @@ function StepPerfil({ f, set, onUpload, uploading, fileInputRef }: {
       </Section>
 
       <Section title="Instagram *">
-        <div className="flex items-center gap-3 bg-black/60 backdrop-blur-md border border-white/10 rounded-xl px-4 py-4 focus-within:border-orange-500/50 transition-all">
+        <div className="flex items-center gap-3 bg-black/60  border border-white/10 rounded-xl px-4 py-4 focus-within:border-orange-500/50 transition-all">
           <AtSign size={16} className="text-white/20" />
           <input className="bg-transparent flex-1 outline-none text-white font-bold text-sm placeholder:text-white/10" value={f.insta} onChange={(e) => set('insta', e.target.value.replace('@', ''))} placeholder="obrigatório" required />
         </div>
@@ -518,15 +519,22 @@ export default function CriarPerfil() {
 
   const isLastStep = (f.tipo === 'atletica' && step === 4) || (f.tipo === 'convidado' && step === 3);
 
-  // ─── UPLOAD COM OTIMIZAÇÃO VIA URL DO CLOUDINARY ──────────────────────────
+  // ─── UPLOAD COM COMPRESSÃO CLIENT-SIDE ──────────────────────────
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
       const file = e.target.files?.[0];
       if (!file) return;
 
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 1600,
+        useWebWorker: true,
+        fileType: 'image/jpeg',
+      });
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
       formData.append('upload_preset', 'intermatch_fotos');
 
       const cloudName = 'dcsiucytm';
@@ -543,12 +551,8 @@ export default function CriarPerfil() {
 
       const data = await response.json();
 
-      // Injeta transformações na URL para otimizar a imagem entregue:
-      // c_limit,w_800 → limita a largura a 800px (ideal para mobile)
-      // q_auto        → compressão automática sem perda visível de qualidade
-      // f_auto        → converte para WebP/AVIF automaticamente (muito mais leve)
       const urlOriginal = data.secure_url;
-      const urlOtimizada = urlOriginal.replace('/upload/', '/upload/c_limit,w_800,q_auto,f_auto/');
+      const urlOtimizada = urlOriginal.replace('/upload/', '/upload/q_auto,f_auto/');
 
       set('foto_url', urlOtimizada);
 

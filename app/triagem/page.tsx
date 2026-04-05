@@ -1,49 +1,88 @@
 'use client';
 
-import { useState, useEffect, Suspense, useCallback } from 'react';
-// 💉 CIRURGIA 1: Removido o import chato do 'next/image'
+import { useState, useEffect, Suspense, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { X, Heart, User, AtSign, RotateCcw } from 'lucide-react';
+import CachedImage from '../components/CachedImage';
 
 export const dynamic = 'force-dynamic';
+
+type Perfil = {
+  id: string;
+  nome: string;
+  idade: number;
+  genero: string;
+  orientacao: string;
+  curso: string;
+  instituicao: string;
+  insta: string;
+  foto_url: string;
+  atletica: string;
+  cargo_atletica: string;
+  tipo_participacao: string;
+  mostrar_curso: boolean;
+  mostrar_orientacao: boolean;
+};
+
+const BATCH_SIZE = 20;
 
 function MatchesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showToast, setShowToast] = useState(false);
-  const [perfis, setPerfis] = useState<any[]>([]);
+  const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [indiceAtual, setIndiceAtual] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [votando, setVotando] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [carregandoMais, setCarregandoMais] = useState(false);
+  const votosPendentesRef = useRef<Set<string>>(new Set());
 
-  const carregarPerfis = useCallback(async () => {
+  const carregarPerfis = useCallback(async (offsetValor?: number, append?: boolean) => {
     try {
+      const ofst = offsetValor ?? offset;
+      if (!append) {
+        setLoading(true);
+      } else {
+        setCarregandoMais(true);
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { router.push('/'); return; }
       const user = session.user;
 
-      const { data: meuPerfil } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      if (!meuPerfil) { router.push('/perfil'); return; }
-
-      const { data: meusVotos } = await supabase.from('likes').select('receiver_id').eq('sender_id', user.id);
-      const idsVotados = meusVotos?.map(v => v.receiver_id) || [];
-
-      const { data: outrosPerfis } = await supabase.from('profiles').select('*').neq('id', user.id);
-
-      if (outrosPerfis) {
-        let perfisFiltrados = outrosPerfis.filter(p => !idsVotados.includes(p.id));
-        perfisFiltrados = perfisFiltrados.filter(p => {
-          const eu = meuPerfil;
-          const outro = p;
-          const euQueroVerOutro = (outro.genero === 'Homem' && eu.ver_homem) || (outro.genero === 'Mulher' && eu.ver_mulher) || (outro.genero === 'Não Binário' && eu.ver_nb);
-          const outroQuerMeVer = (eu.genero === 'Homem' && outro.ver_homem) || (eu.genero === 'Mulher' && outro.ver_mulher) || (eu.genero === 'Não Binário' && outro.ver_nb);
-          return euQueroVerOutro && outroQuerMeVer;
+      const { data: perfisCompatíveis, error } = await supabase
+        .rpc('get_perfis_compativeis', {
+          p_user_id: user.id,
+          p_limit: BATCH_SIZE,
+          p_offset: ofst,
         });
-        setPerfis(perfisFiltrados);
+
+      if (error) {
+        console.error('Erro RPC:', error);
+      } else if (perfisCompatíveis) {
+        const proximos = perfisCompatíveis as Perfil[];
+        if (append) {
+          setPerfis(prev => [...prev, ...proximos]);
+        } else {
+          setPerfis(proximos);
+          setIndiceAtual(0);
+        }
+        if (append) {
+          setOffset(ofst + BATCH_SIZE);
+        }
       }
-    } catch (error) { console.error('Erro:', error); } finally { setLoading(false); }
-  }, [router]);
+    } catch (error) { console.error('Erro:', error); } finally {
+      setLoading(false);
+      setCarregandoMais(false);
+    }
+  }, [offset, router]);
+
+  const carregarMaisPerfis = () => {
+    carregarPerfis(offset + BATCH_SIZE, true);
+  };
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -51,21 +90,36 @@ function MatchesContent() {
       setShowToast(true);
       timeoutId = setTimeout(() => setShowToast(false), 4000);
     }
-    carregarPerfis();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    carregarPerfis(0, false);
     return () => { if (timeoutId) clearTimeout(timeoutId); };
-  }, [searchParams, carregarPerfis]);
+  }, [searchParams]);
 
   const votar = async (liked: boolean) => {
     const perfilAtual = perfis[indiceAtual];
-    if (!perfilAtual) return;
+    if (!perfilAtual || votando) return;
+    setVotando(true);
     setFlipped(false);
     setIndiceAtual(prev => prev + 1);
+
+    if (votosPendentesRef.current.has(perfilAtual.id)) {
+      setVotando(false);
+      return;
+    }
+    votosPendentesRef.current.add(perfilAtual.id);
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      if (!session?.user) { setVotando(false); return; }
       const user = session.user;
-      await supabase.from('likes').insert({ sender_id: user.id, receiver_id: perfilAtual.id, liked });
-    } catch (error) { console.error('Erro ao votar:', error); }
+      const { error } = await supabase.from('likes').insert({ sender_id: user.id, receiver_id: perfilAtual.id, liked });
+      if (error) votosPendentesRef.current.delete(perfilAtual.id);
+    } catch (error) { console.error('Erro ao votar:', error); votosPendentesRef.current.delete(perfilAtual.id); }
+
+    if (indiceAtual >= perfis.length - 1) {
+      carregarMaisPerfis();
+    }
+    setVotando(false);
   };
 
   if (loading) return (
@@ -108,13 +162,12 @@ function MatchesContent() {
 
                 {/* ── FRENTE ── */}
                 <div
-                  className="w-full bg-[#1a1a1a] backdrop-blur-2xl rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] overflow-hidden border border-white/10 flex flex-col"
+                  className="w-full bg-[#1a1a1a] rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] overflow-hidden border border-white/10 flex flex-col"
                   style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
                 >
                   <div className="w-full aspect-[4/5] bg-zinc-900 relative">
                     {p.foto_url ? (
-                      /* 💉 CIRURGIA 2: Substituído o <Image /> do Next por um <img> padrão */
-                      <img src={p.foto_url} alt={p.nome} className="w-full h-full object-cover absolute inset-0" />
+                      <CachedImage src={p.foto_url} alt={p.nome} className="w-full h-full object-cover absolute inset-0" />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-white/5 absolute inset-0">
                         <User size={100} />
@@ -123,7 +176,7 @@ function MatchesContent() {
                     {/* Degradê que morre no fundo do card */}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
 
-                    <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 flex items-center gap-2">
+                    <div className="absolute top-4 right-4 bg-black/50  border border-white/20 rounded-full px-4 py-2 flex items-center gap-2">
                       <RotateCcw size={13} className="text-orange-400" />
                       <span className="text-[10px] font-black uppercase tracking-widest text-white/70">Ver mais</span>
                     </div>
@@ -140,17 +193,17 @@ function MatchesContent() {
                       )}
                       <div className="flex flex-wrap gap-1.5 mt-1">
                         {p.genero && (
-                          <span className="bg-black/50 backdrop-blur-md border border-white/10 text-white/70 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">
+                          <span className="bg-black/50  border border-white/10 text-white/70 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">
                             {p.genero}
                           </span>
                         )}
                         {p.atletica && (
-                          <span className="bg-white/10 backdrop-blur-md border border-white/10 text-white/80 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">
+                          <span className="bg-white/10  border border-white/10 text-white/80 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">
                             ⚔️ {p.atletica}
                           </span>
                         )}
                         {p.insta && (
-                          <span className="bg-black/50 backdrop-blur-md border border-white/10 text-white/50 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1">
+                          <span className="bg-black/50  border border-white/10 text-white/50 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1">
                             <AtSign size={8} className="text-orange-500" />{p.insta.replace('@', '')}
                           </span>
                         )}
@@ -160,7 +213,7 @@ function MatchesContent() {
 
                   {/* Barra inferior incorporada com botões levemente reduzidos */}
                   <div className="pt-3 pb-7 flex justify-center items-center gap-6" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => votar(false)} className="w-14 h-14 bg-white/5 backdrop-blur-md border border-red-500/40 rounded-full flex items-center justify-center text-red-500 hover:bg-red-500/20 active:scale-90 transition-all">
+                    <button onClick={() => votar(false)} className="w-14 h-14 bg-white/5  border border-red-500/40 rounded-full flex items-center justify-center text-red-500 hover:bg-red-500/20 active:scale-90 transition-all">
                       <X size={28} strokeWidth={2.5} />
                     </button>
                     <button onClick={() => votar(true)} className="w-18 h-18 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-[0_10px_40px_rgba(234,88,12,0.4)] hover:bg-orange-400 active:scale-90 transition-all border border-orange-400/50">
@@ -171,7 +224,7 @@ function MatchesContent() {
 
                 {/* ── VERSO (MANTIDO EXATAMENTE IGUAL) ── */}
                 <div
-                  className="absolute inset-0 w-full bg-[#130826] backdrop-blur-2xl rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-white/10 flex flex-col"
+                  className="absolute inset-0 w-full bg-[#130826] bg-opacity-100 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-white/10 flex flex-col"
                   style={{
                     backfaceVisibility: 'hidden',
                     WebkitBackfaceVisibility: 'hidden',
@@ -181,8 +234,8 @@ function MatchesContent() {
                   {/* Topo */}
                   <div className="flex items-center gap-4 px-7 pt-7 pb-5 border-b border-white/5">
                     <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 shrink-0 bg-zinc-900">
-                      {p.foto_url
-                        ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" />
+                        {p.foto_url
+                        ? <CachedImage src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" />
                         : <div className="w-full h-full flex items-center justify-center text-white/10"><User size={24} /></div>
                       }
                     </div>
@@ -257,7 +310,7 @@ function MatchesContent() {
 
                   {/* Botões verso */}
                   <div className="pt-4 pb-8 flex justify-center items-center gap-8" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => votar(false)} className="w-16 h-16 bg-white/5 backdrop-blur-md border border-red-500/40 rounded-full flex items-center justify-center text-red-500 hover:bg-red-500/20 active:scale-90 transition-all">
+                    <button onClick={() => votar(false)} className="w-16 h-16 bg-white/5  border border-red-500/40 rounded-full flex items-center justify-center text-red-500 hover:bg-red-500/20 active:scale-90 transition-all">
                       <X size={32} strokeWidth={2.5} />
                     </button>
                     <button onClick={() => votar(true)} className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-[0_10px_40px_rgba(234,88,12,0.4)] hover:bg-orange-400 active:scale-90 transition-all border border-orange-400/50">
@@ -271,7 +324,7 @@ function MatchesContent() {
           </div>
         ) : (
           <div className="flex-1 w-full max-w-sm flex flex-col items-center justify-center text-center mt-20">
-            <div className="bg-white/5 backdrop-blur-md p-12 rounded-[3rem] border border-white/5 flex flex-col items-center gap-6 w-full">
+            <div className="bg-white/5  p-12 rounded-[3rem] border border-white/5 flex flex-col items-center gap-6 w-full">
               <div className="text-6xl animate-bounce">🏜️</div>
               <h2 className="text-xl font-black text-white uppercase italic tracking-tight">Fim do Radar</h2>
               <p className="text-white/20 font-bold uppercase text-[10px] tracking-widest leading-relaxed">

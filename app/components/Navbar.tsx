@@ -1,7 +1,12 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Flame, Heart, User } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { createCache } from '../../lib/cache';
+
+const matchCountCache = createCache<number>('match-count', 30_000);
 
 type LucideIconType = React.ComponentType<{
   size?: string | number;
@@ -16,11 +21,13 @@ function NavItem({
   icon: Icon,
   label,
   active,
+  badge,
 }: {
   href: string;
   icon: LucideIconType;
   label: string;
   active: boolean;
+  badge?: number;
 }) {
   return (
     <Link
@@ -36,18 +43,32 @@ function NavItem({
       }
     >
       <div className="flex flex-col items-center justify-center gap-[5px]">
-        <Icon
-          size={22}
-          strokeWidth={1.8}
-          fill={active ? 'rgba(255,106,0,0.1)' : 'none'}
-          className="transition-all duration-300"
-          style={{
-            color: active ? '#ff6a00' : 'rgba(150,100,255,0.35)',
-            filter: active
-              ? 'drop-shadow(0 0 4px rgba(255,106,0,0.55))'
-              : undefined,
-          }}
-        />
+        <div className="relative">
+          <Icon
+            size={22}
+            strokeWidth={1.8}
+            fill={active ? 'rgba(255,106,0,0.1)' : 'none'}
+            className="transition-all duration-300"
+            style={{
+              color: active ? '#ff6a00' : 'rgba(150,100,255,0.35)',
+              filter: active
+                ? 'drop-shadow(0 0 4px rgba(255,106,0,0.55))'
+                : undefined,
+            }}
+          />
+          {badge !== undefined && badge > 0 ? (
+            <span
+              className="absolute -top-1 -right-2 min-w-[16px] h-4 flex items-center justify-center rounded-full text-[9px] font-bold px-1"
+              style={{
+                background: '#ff6a00',
+                color: '#fff',
+                boxShadow: '0 0 8px rgba(255,106,0,0.6)',
+              }}
+            >
+              {badge > 50 ? '50+' : badge}
+            </span>
+          ) : null}
+        </div>
         <span
           className="text-[9.5px] font-bold uppercase leading-none transition-all duration-300"
           style={{
@@ -73,8 +94,45 @@ function NavItem({
 
 export default function Navbar() {
   const pathname = usePathname();
+  const [matchCount, setMatchCount] = useState(0);
 
-  const rotasSemNavbar = ['/', '/login', '/ingressar', '/perfil/editar'];
+  useEffect(() => {
+    const fetchMatchCount = async () => {
+      const cached = matchCountCache.get();
+      if (cached !== null) { setMatchCount(cached); return; }
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
+        if (!user) return;
+
+        const { data: meusLikes } = await supabase
+          .from('likes').select('receiver_id')
+          .eq('sender_id', user.id).eq('liked', true);
+
+        const { data: likesRecebidos } = await supabase
+          .from('likes').select('sender_id')
+          .eq('receiver_id', user.id).eq('liked', true);
+
+        if (meusLikes && likesRecebidos) {
+          const idsMeusLikes = meusLikes.map(l => l.receiver_id);
+          const idsLikesRecebidos = likesRecebidos.map(l => l.sender_id);
+          const count = idsMeusLikes.filter(id => idsLikesRecebidos.includes(id)).length;
+          matchCountCache.set(count);
+          setMatchCount(count);
+        }
+      } catch {
+        // silencioso — badge não é crítico
+      }
+    };
+
+    const rotasSemNavbar = ['/', '/ingressar'];
+    if (!rotasSemNavbar.includes(pathname)) {
+      fetchMatchCount();
+    }
+  }, [pathname]);
+
+  const rotasSemNavbar = ['/', '/ingressar', '/perfil/editar'];
   if (rotasSemNavbar.includes(pathname)) return null;
 
   return (
@@ -100,6 +158,7 @@ export default function Navbar() {
           icon={Heart}
           label="Matches"
           active={pathname === '/matches'}
+          badge={matchCount}
         />
         <NavItem
           href="/perfil"

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, Loader2, AtSign, ChevronDown } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 
 // ─── DADOS DAS ATLÉTICAS (igual ao onboarding) ────────────────────────────────
 const ATLETICAS = {
@@ -171,8 +172,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-const inputCls = 'w-full bg-black/60 hover:bg-black/70 border border-white/10 rounded-xl px-4 py-4 focus:border-orange-500/50 focus:bg-black/70 outline-none text-white font-bold text-sm transition-all placeholder:text-white/25 shadow-inner backdrop-blur-md';
-const selectCls = 'w-full bg-black/60 hover:bg-black/70 border border-white/10 rounded-xl px-4 py-4 focus:border-orange-500/50 outline-none text-white font-bold text-sm transition-all cursor-pointer appearance-none shadow-inner backdrop-blur-md';
+const inputCls = 'w-full bg-black/60 hover:bg-black/70 border border-white/10 rounded-xl px-4 py-4 focus:border-orange-500/50 focus:bg-black/70 outline-none text-white font-bold text-sm transition-all placeholder:text-white/25 shadow-inner ';
+const selectCls = 'w-full bg-black/60 hover:bg-black/70 border border-white/10 rounded-xl px-4 py-4 focus:border-orange-500/50 outline-none text-white font-bold text-sm transition-all cursor-pointer appearance-none shadow-inner ';
 
 // ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 export default function EditarPerfil() {
@@ -237,15 +238,22 @@ export default function EditarPerfil() {
     return () => { isMounted = false; };
   }, []);
 
-  // ─── UPLOAD COM OTIMIZAÇÃO VIA URL DO CLOUDINARY ──────────────────────────
+  // ─── UPLOAD COM COMPRESSÃO CLIENT-SIDE ──────────────────────────
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
       const file = e.target.files?.[0];
       if (!file) return;
 
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 1600,
+        useWebWorker: true,
+        fileType: 'image/jpeg',
+      });
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
       formData.append('upload_preset', 'intermatch_fotos');
 
       const cloudName = 'dcsiucytm';
@@ -262,12 +270,8 @@ export default function EditarPerfil() {
 
       const data = await response.json();
 
-      // Injeta transformações na URL para otimizar a imagem entregue:
-      // c_limit,w_800 → limita a largura a 800px (ideal para mobile)
-      // q_auto        → compressão automática sem perda visível de qualidade
-      // f_auto        → converte para WebP/AVIF automaticamente (muito mais leve)
       const urlOriginal = data.secure_url;
-      const urlOtimizada = urlOriginal.replace('/upload/', '/upload/c_limit,w_800,q_auto,f_auto/');
+      const urlOtimizada = urlOriginal.replace('/upload/', '/upload/q_auto,f_auto/');
 
       set('foto_url', urlOtimizada);
 
@@ -359,7 +363,7 @@ export default function EditarPerfil() {
                       const active = f.tipo_participante === key;
                       return (
                         <button key={key} onClick={() => set('tipo_participante', key)}
-                          className={`flex-1 py-3 px-4 rounded-xl border text-xs font-black uppercase tracking-wide transition-all backdrop-blur-md ${active ? 'border-orange-500/60 bg-black/60 text-orange-400' : 'border-white/10 bg-black/60 text-white/40 hover:border-white/25 hover:text-white/70'}`}>
+                          className={`flex-1 py-3 px-4 rounded-xl border text-xs font-black uppercase tracking-wide transition-all  ${active ? 'border-orange-500/60 bg-black/60 text-orange-400' : 'border-white/10 bg-black/60 text-white/40 hover:border-white/25 hover:text-white/70'}`}>
                           {label}
                         </button>
                       );
@@ -419,7 +423,7 @@ export default function EditarPerfil() {
                           : 'border-green-500/60 text-green-400';
                         return (
                           <button key={key} onClick={() => set('tipo_participacao', key)}
-                            className={`flex-1 py-3 px-4 rounded-xl border text-xs font-black uppercase tracking-wide transition-all backdrop-blur-md bg-black/60 ${active ? activeCls : 'border-white/10 text-white/40 hover:border-white/25 hover:text-white/70'}`}>
+                            className={`flex-1 py-3 px-4 rounded-xl border text-xs font-black uppercase tracking-wide transition-all  bg-black/60 ${active ? activeCls : 'border-white/10 text-white/40 hover:border-white/25 hover:text-white/70'}`}>
                             {label}
                           </button>
                         );
@@ -534,7 +538,7 @@ export default function EditarPerfil() {
 
             {/* ── Instagram ── */}
             <Section title="Instagram">
-              <div className="flex items-center gap-3 bg-black/60 backdrop-blur-md border border-white/10 rounded-xl px-4 py-4 focus-within:border-orange-500/50 transition-all">
+              <div className="flex items-center gap-3 bg-black/60  border border-white/10 rounded-xl px-4 py-4 focus-within:border-orange-500/50 transition-all">
                 <AtSign size={16} className="text-white/20" />
                 <input className="bg-transparent flex-1 outline-none text-white font-bold text-sm placeholder:text-white/25"
                   value={f.insta} onChange={(e) => set('insta', e.target.value.replace('@', ''))} placeholder="seu.insta" />
