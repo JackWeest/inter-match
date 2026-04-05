@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, memo } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, Loader2, AtSign, ChevronDown } from 'lucide-react';
@@ -97,7 +97,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
   );
 }
 
-function LiveCard({ f, completion }: { f: FormData; completion: number }) {
+const LiveCard = memo(function LiveCard({ f, completion }: { f: FormData; completion: number }) {
   return (
     <div className="w-full flex flex-col items-center gap-6">
       <div className="relative w-[160px] h-[160px] shrink-0">
@@ -152,7 +152,7 @@ function LiveCard({ f, completion }: { f: FormData; completion: number }) {
       </div>
     </div>
   );
-}
+});
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -440,7 +440,7 @@ export default function EditarPerfil() {
                 <div className="md:col-span-2">
                   <Field label="Nome"><input className={inputCls} value={f.nome} onChange={(e) => set('nome', e.target.value)} placeholder="Seu nome" /></Field>
                 </div>
-                <Field label="Idade"><input type="number" className={inputCls} value={f.idade} onChange={(e) => set('idade', e.target.value)} placeholder="22" /></Field>
+                <Field label="Idade"><input type="number" className={inputCls} value={f.idade} onChange={(e) => set('idade', e.target.value)} placeholder="Sua idade" /></Field>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Gênero">

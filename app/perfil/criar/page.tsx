@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Camera, ArrowLeft, ArrowRight, Loader2, AtSign, Check, ChevronDown } from 'lucide-react';
+import { Camera, ArrowLeft, ArrowRight, Loader2, AtSign, Check, ChevronDown, Shield, FileText, AlertTriangle } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 
 // ─── DADOS DAS ATLÉTICAS ───────────────────────────────────────────────────────
@@ -66,6 +66,7 @@ type OnboardingData = {
   ver_nb: boolean;
   mostrar_curso: boolean;
   mostrar_orientacao: boolean;
+  aceitouTermos: boolean;
 };
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -158,6 +159,77 @@ function LiveCard({ f, completion }: { f: OnboardingData; completion: number }) 
   );
 }
 
+// ─── STEP TERMOS DE USO ─────────────────────────────────────────────────────
+function StepTermos({ f, set }: { f: OnboardingData; set: (k: keyof OnboardingData, v: any) => void }) {
+  return (
+    <div className="flex flex-col gap-6 animate-fadein">
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          <Shield size={24} className="text-orange-500" />
+          <h1 className="text-3xl font-black text-white uppercase italic tracking-tight leading-none">Termos de Uso<span className="text-orange-500">.</span></h1>
+        </div>
+        <p className="text-white/30 text-xs mt-3 font-medium leading-relaxed">É obrigatório ler e aceitar as regras antes de criar sua conta.</p>
+      </div>
+
+      <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 text-xs text-white/50 leading-relaxed space-y-4 max-h-[400px] overflow-y-auto">
+        <div>
+          <p className="text-white font-bold text-[11px] uppercase tracking-wider mb-1">Bem-vindo ao Inter-Match!</p>
+          <p>Antes de criar sua conta e começar a usar o aplicativo, é obrigatório que você leia e concorde com as regras abaixo. Ao clicar em {"\""}Aceitar{"\""}, você confirma que compreendeu e concorda com todas as condições descritas.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">1. Natureza do Aplicativo</p>
+          <p>O Inter-Match é uma iniciativa 100% recreativa e sem fins lucrativos, criada exclusivamente para promover a interação entre os participantes da festa do InterCE, organizada pela Alcateia. O aplicativo não possui vínculo comercial e não garante encontros ou qualquer tipo de resultado no mundo real.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">2. Declaração de Maioridade</p>
+          <p>Ao se cadastrar, você declara expressamente ter 18 (dezoito) anos de idade completos ou mais. O uso deste aplicativo por menores de idade é estritamente proibido. Caso seja identificada a presença de menores, a conta será imediatamente banida.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">3. Direitos de Imagem e Conteúdo</p>
+          <p>Ao enviar uma foto para o nosso banco de dados, você concede permissão para que sua imagem seja exibida para outros usuários dentro do aplicativo. Você declara que a imagem enviada é de sua própria autoria ou que possui os direitos de uso sobre ela, e assume total responsabilidade pelo conteúdo da foto enviada.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">4. Conduta do Usuário e Proibições</p>
+          <p>É terminantemente proibido: criação de perfis falsos ou uso de fotos de outras pessoas sem autorização; envio de imagens contendo nudez explícita, violência ou material impróprio; qualquer tipo de discurso de ódio, assédio, racismo, homofobia ou ofensa a outros usuários. Perfis que violarem essas regras serão imediatamente excluídos sem aviso prévio.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">5. Isenção de Responsabilidade</p>
+          <p>O aplicativo é fornecido {"\""}no estado em que se encontra{"\""}, sem garantias de funcionamento ininterrupto. O Inter-Match é uma iniciativa estritamente independente — o evento InterCE, a empresa SOMOS, e os patrocinadores Medway e Nymu não possuem qualquer vínculo legal, administrativo, financeiro ou de desenvolvimento com este aplicativo.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">6. Proteção de Dados (Privacidade)</p>
+          <p>Os dados coletados (nome, foto, informações de perfil) serão utilizados única e exclusivamente para o funcionamento do aplicativo durante o período relacionado ao evento do InterCE.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">7. Disposições Gerais e Foro</p>
+          <p>Estes termos são regidos pelas leis brasileiras. Para dirimir quaisquer controvérsias decorrentes do uso do aplicativo, fica eleito o foro da Comarca de Sobral - CE.</p>
+        </div>
+      </div>
+
+      <label className="flex items-start gap-4 cursor-pointer group bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/20 rounded-xl px-5 py-4 transition-all mt-2">
+        <div className={`relative w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${f.aceitouTermos ? 'border-orange-500 bg-orange-500' : 'border-white/20'}`}>
+          {f.aceitouTermos && <Check size={14} className="text-white" />}
+        </div>
+        <div>
+          <span className={`text-xs ${f.aceitouTermos ? 'text-white/30' : 'text-white/20'}`}>
+            Marcar caixa para aceitar os termos acima.
+          </span>
+          <p className="text-white/30 text-[10px] mt-0.5">É obrigatório aceitar para continuar.</p>
+        </div>
+        <input type="checkbox" className="sr-only" checked={f.aceitouTermos} onChange={(e) => set('aceitouTermos', e.target.checked)} />
+      </label>
+    </div>
+  );
+}
+
+// ─── SECTION ─────────────────────────────────────────────────────────────────
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-10">
@@ -360,7 +432,7 @@ function StepPerfil({ f, set, onUpload, uploading, fileInputRef }: {
       <Section title="Identidade">
         <div className="grid grid-cols-3 gap-4 mb-5">
           <div className="col-span-2"><Field label="Nome"><input className={inputCls} value={f.nome} onChange={(e) => set('nome', e.target.value)} placeholder="Seu nome" /></Field></div>
-          <Field label="Idade"><input type="number" className={inputCls} value={f.idade} onChange={(e) => set('idade', e.target.value)} placeholder="22" /></Field>
+          <Field label="Idade"><input type="number" className={inputCls} value={f.idade} onChange={(e) => set('idade', e.target.value)} placeholder="Sua idade" /></Field>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Gênero">
@@ -461,6 +533,7 @@ export default function CriarPerfil() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showAgeModal, setShowAgeModal] = useState(false);
 
   const [f, setF] = useState<OnboardingData>({
     tipo: null, atletica: '', cargo: '', participacao: null,
@@ -468,6 +541,7 @@ export default function CriarPerfil() {
     curso: '', instituicao: '', insta: '', foto_url: '',
     ver_homem: false, ver_mulher: true, ver_nb: false,
     mostrar_curso: true, mostrar_orientacao: true,
+    aceitouTermos: false,
   });
 
   const set = (key: keyof OnboardingData, val: any) => setF(prev => ({ ...prev, [key]: val }));
@@ -486,7 +560,7 @@ export default function CriarPerfil() {
     return () => { isMounted = false; };
   }, []);
 
-  const totalSteps = f.tipo === 'atletica' ? 4 : f.tipo === 'convidado' ? 3 : 4;
+  const totalSteps = f.tipo === 'atletica' ? 5 : f.tipo === 'convidado' ? 4 : 5;
 
   const canAdvance = () => {
     if (step === 1) return !!f.tipo;
@@ -494,7 +568,10 @@ export default function CriarPerfil() {
     if (step === 2 && f.tipo === 'convidado') return !!f.participacao;
     if (step === 3 && f.tipo === 'atletica') return !!f.participacao;
     if (step === 3 && f.tipo === 'convidado') return !!f.nome && !!f.insta;
-    if (step === 4) return !!f.nome && !!f.insta;
+    if (step === 4 && f.tipo === 'atletica') return !!f.nome && !!f.insta;
+    // step 4 convidado (termos) and step 5 atletica (termos) — always advance to see the terms
+    if (step === 4 && f.tipo === 'convidado') return true;
+    // step 5 atletica (perfil) -> last step handled by isLastStep/save, not advance
     return false;
   };
 
@@ -512,12 +589,14 @@ export default function CriarPerfil() {
     if (step === 2 && f.tipo === 'atletica') return <Step2Atletica f={f} set={set} />;
     if (step === 2 && f.tipo === 'convidado') return <StepParticipacao f={f} set={set} />;
     if (step === 3 && f.tipo === 'atletica') return <StepParticipacao f={f} set={set} />;
-    if ((step === 4 && f.tipo === 'atletica') || (step === 3 && f.tipo === 'convidado'))
-      return <StepPerfil f={f} set={set} onUpload={handleUpload} uploading={uploading} fileInputRef={fileInputRef} />;
+    if (step === 3 && f.tipo === 'convidado') return <StepPerfil f={f} set={set} onUpload={handleUpload} uploading={uploading} fileInputRef={fileInputRef} />;
+    if (step === 4 && f.tipo === 'atletica') return <StepPerfil f={f} set={set} onUpload={handleUpload} uploading={uploading} fileInputRef={fileInputRef} />;
+    if ((step === 5 && f.tipo === 'atletica') || (step === 4 && f.tipo === 'convidado'))
+      return <StepTermos f={f} set={set} />;
     return null;
   };
 
-  const isLastStep = (f.tipo === 'atletica' && step === 4) || (f.tipo === 'convidado' && step === 3);
+  const isLastStep = (f.tipo === 'atletica' && step === 5) || (f.tipo === 'convidado' && step === 4);
 
   // ─── UPLOAD COM COMPRESSÃO CLIENT-SIDE ──────────────────────────
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -564,13 +643,22 @@ export default function CriarPerfil() {
   };
 
   const salvar = async () => {
+    if (!f.aceitouTermos) {
+      alert('Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar.');
+      return;
+    }
+    const idade = parseInt(f.idade);
+    if (!f.idade || isNaN(idade) || idade < 18) {
+      setShowAgeModal(true);
+      return;
+    }
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { error } = await supabase.from('profiles').upsert({
         id: user.id,
         nome: f.nome,
-        idade: parseInt(f.idade) || 0,
+        idade: idade,
         genero: f.genero,
         orientacao: f.orientacao,
         curso: f.curso,
@@ -589,6 +677,9 @@ export default function CriarPerfil() {
       });
       if (!error) {
         setSaved(true);
+        // Limpar cache da Catraca pra ela saber que o perfil está completo
+        // @ts-ignore - Catraca usa módulo global, acessível via import
+        try { window.dispatchEvent(new CustomEvent('profile-created')); } catch {}
         setTimeout(() => router.push('/triagem'), 800);
       }
     }
@@ -619,9 +710,9 @@ export default function CriarPerfil() {
             <button onClick={back} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors">
               <ArrowLeft size={18} />
             </button>
-            <StepBar step={step} total={f.tipo === 'atletica' ? 4 : 3} />
+            <StepBar step={step} total={f.tipo === 'atletica' ? 5 : 4} />
             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500 italic w-[40px] text-right">
-              {step}/{f.tipo === 'atletica' ? 4 : f.tipo === 'convidado' ? 3 : '?'}
+              {step}/{f.tipo === 'atletica' ? 5 : f.tipo === 'convidado' ? 4 : '?'}
             </span>
           </div>
         </div>
@@ -660,6 +751,27 @@ export default function CriarPerfil() {
           </div>
         </div>
       </div>
+
+      {/* MODAL IDADE */}
+      {showAgeModal && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/90">
+          <div className="absolute inset-0" onClick={() => setShowAgeModal(false)} />
+          <div className="relative w-full max-w-sm bg-[#0f051a] backdrop-blur-xl rounded-[2.5rem] shadow-[0_0_50px_rgba(239,68,68,0.15)] p-8 flex flex-col items-center text-center border border-red-500/20 animate-in zoom-in-95 duration-200">
+            <div className="bg-red-500/20 text-red-500 p-4 rounded-full mb-5 ring-4 ring-red-500/10">
+              <AlertTriangle size={32} />
+            </div>
+            <h3 className="text-2xl font-black italic text-white mb-2 leading-tight uppercase">Atenção!</h3>
+            <p className="text-white/40 text-[11px] uppercase tracking-widest font-bold mb-8 leading-relaxed">
+              O Inter-Match é exclusivo para maiores de 18 anos. Você precisa ter 18 anos ou mais para criar uma conta.
+            </p>
+            <div className="flex flex-col gap-3 w-full">
+              <button onClick={() => setShowAgeModal(false)} className="w-full h-14 bg-white/0 font-black uppercase tracking-widest text-[11px] rounded-2xl flex items-center justify-center hover:bg-white/10 active:scale-95 transition-all border border-red-500/20 text-red-500">
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

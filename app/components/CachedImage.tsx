@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { getCachedSrc } from '../../lib/photo-cache';
 
 /**
- * Imagem com cache em blob URL.
+ * Imagem com cache persistente.
  *
- * 1. Renderiza com src direto (browser baixa a imagem normalmente)
- * 2. Em background baixa a imagem e converte pra blob URL, salvando no cache
- * 3. Na próxima vez que essa mesma foto aparecer → usa blob URL direto (zero Cloudinary)
+ * 1. Verifica se a foto já está em cache (disco)
+ * 2. Se SIM → renderiza direto do cache (zero Cloudinary)
+ * 3. Se NÃO → renderiza a URL original, depois baixa e salva em cache
+ *
+ * Na próxima sessão ou página, a foto vem do cache (zero Cloudinary).
  */
 export default function CachedImage({
   src,
@@ -17,24 +19,22 @@ export default function CachedImage({
   alt: string;
   className?: string;
 }) {
-  const [displayedSrc, setDisplayedSrc] = useState(src);
+  const [displayedSrc, setDisplayedSrc] = useState<string>(src ?? '');
 
   useEffect(() => {
-    setDisplayedSrc(src); // reset quando muda a foto
+    if (!src) { setDisplayedSrc(''); return; }
 
-    if (!src) return;
-
+    setDisplayedSrc(''); // reset
     let cancelled = false;
+
     (async () => {
-      // Se já está em cache (de outro componente), usa o blob URL direto
       const cached = await getCachedSrc(src);
-      if (!cancelled && cached !== src) {
-        setDisplayedSrc(cached);
-      }
+      if (!cancelled) setDisplayedSrc(cached);
     })();
 
     return () => { cancelled = true; };
   }, [src]);
 
+  if (!displayedSrc) return null;
   return <img src={displayedSrc} alt={alt} className={className} loading="lazy" decoding="async" />;
 }

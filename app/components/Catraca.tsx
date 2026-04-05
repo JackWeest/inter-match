@@ -9,7 +9,6 @@ type AuthState = {
   temPerfil: boolean;
 };
 
-// Cache em memória por sessão (não faz query ao Supabase toda navegação)
 const sessionCache: { current: AuthState | null } = { current: null };
 
 export default function Catraca({ children }: { children: React.ReactNode }) {
@@ -29,23 +28,23 @@ export default function Catraca({ children }: { children: React.ReactNode }) {
       verificandoRef.current = true;
 
       try {
-        // 1. Rotas públicas sem sessão
         const { data: { session } } = await supabase.auth.getSession();
 
+        // Sem sessão em rota pública → permite
         if (rotasPublicas.includes(pathname)) {
           if (!session) { setPronto(true); return; }
-          // Logado em rota pública → redireciona pra triagem
+          // Logado tentando acessar rota pública → triagem
           router.replace('/triagem');
           return;
         }
 
-        // 2. Sem sessão em rota protegida → home
+        // Sem sessão em rota protegida → home
         if (!session) {
           router.replace('/');
           return;
         }
 
-        // 3. Usa cache em memória se válido (mesmo usuário)
+        // Perfil completo = tem 'nome' preenchido (registro só salva 'insta')
         if (sessionCache.current?.userId === session.user.id) {
           const cached = sessionCache.current;
           if (!cached.temPerfil && !rotasCriarPerfil.includes(pathname)) {
@@ -53,26 +52,24 @@ export default function Catraca({ children }: { children: React.ReactNode }) {
           } else if (cached.temPerfil && rotasCriarPerfil.includes(pathname)) {
             router.replace('/perfil/editar');
           }
-          setPronto(true);
+          if (!ignorado) setPronto(true);
           return;
         }
 
-        // 4. Sem cache → verifica perfil (só 1x por sessão)
         let temPerfil = false;
         try {
           const { data: perfil } = await supabase
             .from('profiles')
-            .select('id')
+            .select('nome')
             .eq('id', session.user.id)
             .single();
-          temPerfil = !!perfil;
+          temPerfil = !!(perfil && perfil.nome);
           sessionCache.current = { userId: session.user.id, temPerfil };
         } catch {
           temPerfil = false;
           sessionCache.current = { userId: session.user.id, temPerfil };
         }
 
-        // 5. Redireciona se necessário
         if (!temPerfil && !rotasCriarPerfil.includes(pathname)) {
           router.replace('/perfil/criar');
           return;
@@ -98,9 +95,16 @@ export default function Catraca({ children }: { children: React.ReactNode }) {
       }
     });
 
+    // Escuta quando perfil é criado pra invalidar o cache
+    const handleProfileCreated = () => {
+      sessionCache.current = null;
+    };
+    window.addEventListener('profile-created', handleProfileCreated);
+
     return () => {
       ignorado = true;
       listener?.subscription.unsubscribe();
+      window.removeEventListener('profile-created', handleProfileCreated);
     };
   }, [pathname, router]);
 
@@ -114,20 +118,23 @@ export default function Catraca({ children }: { children: React.ReactNode }) {
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          backgroundColor: '#fff7ed',
+          backgroundColor: '#0f051a',
         }}
       >
+        <img
+          src="/NOME.png"
+          alt="INTERMATCH"
+          style={{ width: '200px', opacity: '0.6' }}
+        />
         <div style={{
           width: '40px',
           height: '40px',
-          border: '4px solid #ea580c',
+          border: '4px solid rgba(255,255,255,0.1)',
           borderTopColor: 'transparent',
           borderRadius: '50%',
           animation: 'spin 1s linear infinite',
+          marginTop: '32px',
         }} />
-        <p style={{ fontWeight: 'bold', color: '#ea580c', marginTop: '20px' }}>
-          Verificando sua pulseira... 🏥
-        </p>
         <style>{`
           @keyframes spin { to { transform: rotate(360deg); } }
         `}</style>
