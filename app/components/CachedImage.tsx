@@ -9,6 +9,9 @@ import { getCachedSrc } from '../../lib/photo-cache';
  * 3. Se NÃO → renderiza a URL original, depois baixa e salva em cache
  *
  * Na próxima sessão ou página, a foto vem do cache (zero Cloudinary).
+ *
+ * Sem blink: mantém a foto anterior visível até a nova estar pronta,
+ * com crossfade suave.
  */
 export default function CachedImage({
   src,
@@ -20,21 +23,34 @@ export default function CachedImage({
   className?: string;
 }) {
   const [displayedSrc, setDisplayedSrc] = useState<string>(src ?? '');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!src) { setDisplayedSrc(''); return; }
+    if (!src) { setDisplayedSrc(''); setLoading(false); return; }
 
-    setDisplayedSrc(''); // reset
+    setLoading(true);
     let cancelled = false;
 
     (async () => {
       const cached = await getCachedSrc(src);
-      if (!cancelled) setDisplayedSrc(cached);
+      if (!cancelled) {
+        setDisplayedSrc(cached);
+        setLoading(false);
+      }
     })();
 
     return () => { cancelled = true; };
   }, [src]);
 
-  if (!displayedSrc) return null;
-  return <img src={displayedSrc} alt={alt} className={className} loading="lazy" decoding="async" />;
+  if (!displayedSrc && !loading) return null;
+
+  return (
+    <img
+      src={displayedSrc}
+      alt={alt}
+      className={`${className} transition-opacity duration-200 ${loading ? 'opacity-70' : 'opacity-100'}`}
+      loading="lazy"
+      decoding="async"
+    />
+  );
 }

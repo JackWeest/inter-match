@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Flame, Heart, User } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { createCache } from '../../lib/cache';
@@ -95,41 +95,69 @@ function NavItem({
 export default function Navbar() {
   const pathname = usePathname();
   const [matchCount, setMatchCount] = useState(0);
+  const userRef = useRef<string | null>(null);
+
+  const fetchMatchCount = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return;
+      userRef.current = user.id;
+
+      const { data: meusLikes } = await supabase
+        .from('likes').select('receiver_id')
+        .eq('sender_id', user.id).eq('liked', true);
+
+      const { data: likesRecebidos } = await supabase
+        .from('likes').select('sender_id')
+        .eq('receiver_id', user.id).eq('liked', true);
+
+      if (meusLikes && likesRecebidos) {
+        const idsMeusLikes = meusLikes.map(l => l.receiver_id);
+        const idsLikesRecebidos = likesRecebidos.map(l => l.sender_id);
+        const count = idsMeusLikes.filter(id => idsLikesRecebidos.includes(id)).length;
+        matchCountCache.set(count);
+        setMatchCount(count);
+      }
+    } catch {
+      // silencioso — badge não é crítico
+    }
+  };
 
   useEffect(() => {
-    const fetchMatchCount = async () => {
-      const cached = matchCountCache.get();
-      if (cached !== null) { setMatchCount(cached); return; }
+    const cached = matchCountCache.get();
+    if (cached !== null) { setMatchCount(cached); return; }
+    fetchMatchCount();
+  }, [pathname]);
 
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) return;
-
-        const { data: meusLikes } = await supabase
-          .from('likes').select('receiver_id')
-          .eq('sender_id', user.id).eq('liked', true);
-
-        const { data: likesRecebidos } = await supabase
-          .from('likes').select('sender_id')
-          .eq('receiver_id', user.id).eq('liked', true);
-
-        if (meusLikes && likesRecebidos) {
-          const idsMeusLikes = meusLikes.map(l => l.receiver_id);
-          const idsLikesRecebidos = likesRecebidos.map(l => l.sender_id);
-          const count = idsMeusLikes.filter(id => idsLikesRecebidos.includes(id)).length;
-          matchCountCache.set(count);
-          setMatchCount(count);
-        }
-      } catch {
-        // silencioso — badge não é crítico
-      }
-    };
-
+  // Supabase Realtime: escuta mudanças na tabela likes
+  useEffect(() => {
     const rotasSemNavbar = ['/', '/ingressar'];
-    if (!rotasSemNavbar.includes(pathname)) {
+    if (rotasSemNavbar.includes(pathname)) return;
+
+    const channel = supabase
+      .channel('match-count')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'likes' },
+        () => {
+          matchCountCache.invalidate();
+          fetchMatchCount();
+        }
+      )
+      .subscribe();
+
+    // Também escuta evento global de match criado
+    const onMatchCreated = () => {
+      matchCountCache.invalidate();
       fetchMatchCount();
-    }
+    };
+    window.addEventListener('match-created', onMatchCreated);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('match-created', onMatchCreated);
+    };
   }, [pathname]);
 
   const rotasSemNavbar = ['/', '/ingressar', '/perfil/editar'];

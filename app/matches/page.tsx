@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AtSign, Heart, ChevronRight, X, User, RotateCcw, ArrowLeft } from 'lucide-react';
 import { createCache } from '../../lib/cache';
 import CachedImage from '../components/CachedImage';
+import { useToast } from '../components/Toast';
 
 type MatchProfile = {
   id: string;
@@ -29,7 +30,7 @@ export const dynamic = 'force-dynamic';
 function MatchesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [showToast, setShowToast] = useState(false);
+  const { toast } = useToast();
   const [matches, setMatches] = useState<MatchProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMatch, setSelectedMatch] = useState<MatchProfile | null>(null);
@@ -39,7 +40,7 @@ function MatchesContent() {
 
   useEffect(() => {
     let montado = true;
-    const buscarMatches = async () => {
+    const carregarMatches = async () => {
       try {
         const cached = matchesCache.get();
         if (cached) {
@@ -68,18 +69,37 @@ function MatchesContent() {
       }
     };
 
-    if (matchesLiberados) buscarMatches();
+    carregarMatches();
     return () => { montado = false; };
   }, []);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
     if (searchParams.get('success') === 'true') {
-      setShowToast(true);
-      timeoutId = setTimeout(() => setShowToast(false), 4000);
+      toast('Perfil pronto pro rolê!');
     }
-    return () => { if (timeoutId) clearTimeout(timeoutId); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // Supabase Realtime: escuta novos matches
+  useEffect(() => {
+    const channel = supabase
+      .channel('match-list')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'likes' },
+        () => {
+          matchesCache.invalidate();
+          if (userIdRef.current) {
+            supabase.rpc('get_matches_mutuos', { p_user_id: userIdRef.current }).then(({ data }) => {
+              if (data) setMatches(data as MatchProfile[]);
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   useEffect(() => {
     if (!selectedMatch) setFlipped(false);
@@ -103,12 +123,6 @@ function MatchesContent() {
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
 
       <main className="min-h-[100dvh] bg-transparent pb-40 flex flex-col items-center px-6 relative z-10 overflow-x-hidden">
-
-        {showToast && (
-          <div className="fixed top-4 z-[100] animate-in slide-in-from-top duration-500 bg-orange-500 text-white px-6 py-3 rounded-full shadow-2xl border border-white/20 font-black italic uppercase text-[10px] tracking-widest">
-            🔥 Perfil pronto pro rolê!
-          </div>
-        )}
 
         {/* HEADER */}
         <div className="w-full max-w-sm pt-10 pb-6 flex flex-col items-center text-center">

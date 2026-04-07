@@ -3,7 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import Catraca from "./components/Catraca";
-import Background from "./components/Background"; 
+import Background from "./components/Background";
+import { ToastProvider } from "./components/Toast"; 
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,16 +38,18 @@ export default function RootLayout({
     <html
       lang="pt-br"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable}`} // ✅ removido h-full
+      className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <body className="min-h-screen antialiased flex flex-col relative bg-transparent">
-        <Catraca>
-          <Background />
-          <main className="flex-1 w-full relative z-10 bg-transparent">
-            {children}
-          </main>
-          <Navbar />
-        </Catraca>
+        <ToastProvider>
+          <Catraca>
+            <Background />
+            <main className="flex-1 w-full relative z-10 bg-transparent">
+              {children}
+            </main>
+            <Navbar />
+          </Catraca>
+        </ToastProvider>
       </body>
     </html>
   );

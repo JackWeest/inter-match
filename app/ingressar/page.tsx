@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Flame, ChevronLeft, Eye, EyeOff, AtSign, FileText } from 'lucide-react';
+import { useToast } from '../components/Toast';
 
 export default function Registro() {
   const [email, setEmail] = useState('');
@@ -15,28 +16,29 @@ export default function Registro() {
   const router = useRouter();
   const [aceitouTermos, setAceitouTermos] = useState(false);
   const [mostrarTermos, setMostrarTermos] = useState(false);
+  const { toast } = useToast();
 
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // 1. Parede de Segurança: Verificação de senha dupla
     if (password !== confirmPassword) {
-      alert('As senhas não coincidem, lil bro! Dá uma checada.');
+      toast('Senhas não coincidem, dá uma checada.', 'error');
       return;
     }
 
     if (password.length < 6) {
-      alert('A senha precisa ter pelo menos 6 caracteres.');
+      toast('Senha precisa ter pelo menos 6 caracteres.', 'error');
       return;
     }
 
     if (!insta) {
-      alert('O Instagram é obrigatório para a galera te achar no radar!');
+      toast('Instagram é obrigatório pra galera te achar!', 'error');
       return;
     }
 
     if (!aceitouTermos) {
-      alert('Você precisa aceitar os termos de uso para continuar.');
+      toast('Aceite os termos de uso para continuar.', 'error');
       return;
     }
 

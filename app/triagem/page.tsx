@@ -5,6 +5,8 @@ import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { X, Heart, User, AtSign, RotateCcw } from 'lucide-react';
 import CachedImage from '../components/CachedImage';
+import { preloadBatch } from '../../lib/photo-cache';
+import { useToast } from '../components/Toast';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +32,7 @@ const BATCH_SIZE = 20;
 function MatchesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   const [showToast, setShowToast] = useState(false);
   const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [indiceAtual, setIndiceAtual] = useState(0);
@@ -84,6 +87,21 @@ function MatchesContent() {
     carregarPerfis(offset + BATCH_SIZE, true);
   };
 
+  // Pré-carrega as próximas 5 fotos em background
+  useEffect(() => {
+    const start = indiceAtual + 1;
+    const end = Math.min(start + 5, perfis.length);
+    const urlFotos = perfis.slice(start, end).map(pf => pf.foto_url);
+    if (urlFotos.length > 0) preloadBatch(urlFotos);
+  }, [indiceAtual, perfis]);
+
+  // Quando perfis chegam do zero (não append), pré-carrega o lote inicial
+  useEffect(() => {
+    if (perfis.length > 0 && indiceAtual === 0) {
+      preloadBatch(perfis.map(pf => pf.foto_url));
+    }
+  }, [perfis]);
+
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     if (searchParams.get('success') === 'true') {
@@ -114,6 +132,16 @@ function MatchesContent() {
       const user = session.user;
       const { error } = await supabase.from('likes').insert({ sender_id: user.id, receiver_id: perfilAtual.id, liked });
       if (error) votosPendentesRef.current.delete(perfilAtual.id);
+
+      // Se deu like, verifica se virou match mútuo
+      if (liked) {
+        const { data: matchVerificacao } = await supabase
+          .rpc('get_matches_mutuos', { p_user_id: user.id });
+        if (matchVerificacao && (matchVerificacao as any[]).some((m: any) => m.id === perfilAtual.id)) {
+          window.dispatchEvent(new CustomEvent('match-created'));
+          window.dispatchEvent(new CustomEvent('new-match'));
+        }
+      }
     } catch (error) { console.error('Erro ao votar:', error); votosPendentesRef.current.delete(perfilAtual.id); }
 
     if (indiceAtual >= perfis.length - 1) {
