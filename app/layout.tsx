@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Match Med 🏥",
-  description: "Triagem da Festa - UFC Sobral",
+  title: "Inter Match",
+  description: "Match da InterCE",
 };
 
 // ✅ Viewport separado do metadata (padrão Next.js 14+)

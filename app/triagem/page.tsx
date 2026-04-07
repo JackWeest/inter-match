@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { X, Heart, User, AtSign, RotateCcw } from 'lucide-react';
 import CachedImage from '../components/CachedImage';
 import { preloadBatch } from '../../lib/photo-cache';
-import { useToast } from '../components/Toast';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +31,6 @@ const BATCH_SIZE = 20;
 function MatchesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { toast } = useToast();
   const [showToast, setShowToast] = useState(false);
   const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [indiceAtual, setIndiceAtual] = useState(0);
