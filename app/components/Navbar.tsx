@@ -130,24 +130,41 @@ export default function Navbar() {
     fetchMatchCount();
   }, [pathname]);
 
-  // Supabase Realtime: escuta mudanças na tabela likes
+  // Supabase Realtime: escuta MUDANÇAS (agora super otimizado e seguro)
   useEffect(() => {
     const rotasSemNavbar = ['/', '/ingressar'];
     if (rotasSemNavbar.includes(pathname)) return;
 
-    const channel = supabase
-      .channel('match-count')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'likes' },
-        () => {
-          matchCountCache.invalidate();
-          fetchMatchCount();
-        }
-      )
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel>;
 
-    // Também escuta evento global de match criado
+    const setupRealtime = async () => {
+      // 1. Pega a sessão para sabermos o ID do usuário local
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      // 2. Abre o canal APENAS para INSERTs onde ele é o "receiver_id"
+      channel = supabase
+        .channel('match-count')
+        .on(
+          'postgres_changes',
+          { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'likes',
+            filter: `receiver_id=eq.${session.user.id}` // 👈 MÁGICA DE PROTEÇÃO AQUI
+          },
+          () => {
+            // Só roda isso se ALGUÉM der like NELE
+            matchCountCache.invalidate();
+            fetchMatchCount();
+          }
+        )
+        .subscribe();
+    };
+
+    setupRealtime();
+
+    // Também escuta evento global de match criado (ex: quando ele próprio dá like)
     const onMatchCreated = () => {
       matchCountCache.invalidate();
       fetchMatchCount();
@@ -155,7 +172,8 @@ export default function Navbar() {
     window.addEventListener('match-created', onMatchCreated);
 
     return () => {
-      supabase.removeChannel(channel);
+      // Remove o canal de forma segura caso o componente seja desmontado
+      if (channel) supabase.removeChannel(channel);
       window.removeEventListener('match-created', onMatchCreated);
     };
   }, [pathname]);

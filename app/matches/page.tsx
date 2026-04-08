@@ -80,25 +80,41 @@ function MatchesContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Supabase Realtime: escuta novos matches
+  // ─── 💉 MÁGICA APLICADA AQUI: Supabase Realtime Otimizado ───
   useEffect(() => {
-    const channel = supabase
-      .channel('match-list')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'likes' },
-        () => {
-          matchesCache.invalidate();
-          if (userIdRef.current) {
-            supabase.rpc('get_matches_mutuos', { p_user_id: userIdRef.current }).then(({ data }) => {
+    let channel: ReturnType<typeof supabase.channel>;
+
+    const setupRealtime = async () => {
+      // 1. Precisamos da sessão para pegar o ID do usuário
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      // 2. Cria a escuta apenas para novos likes (INSERT) direcionados a ele (receiver_id)
+      channel = supabase
+        .channel('match-list')
+        .on(
+          'postgres_changes',
+          { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'likes',
+            filter: `receiver_id=eq.${session.user.id}` // 👈 SALVAÇÃO DE QUOTA
+          },
+          () => {
+            matchesCache.invalidate();
+            supabase.rpc('get_matches_mutuos', { p_user_id: session.user.id }).then(({ data }) => {
               if (data) setMatches(data as MatchProfile[]);
             });
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    };
 
-    return () => { supabase.removeChannel(channel); };
+    setupRealtime();
+
+    return () => { 
+      if (channel) supabase.removeChannel(channel); 
+    };
   }, []);
 
   useEffect(() => {

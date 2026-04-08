@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, Loader2, AtSign, ChevronDown } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 
+// Importe o helper no topo do arquivo
+import { otimizarUrlCloudinary } from '../../../lib/cloudinary';
+
 // ─── DADOS DAS ATLÉTICAS (igual ao onboarding) ────────────────────────────────
 const ATLETICAS = {
   '1ª Divisão': [
@@ -270,8 +273,8 @@ export default function EditarPerfil() {
 
       const data = await response.json();
 
-      const urlOriginal = data.secure_url;
-      const urlOtimizada = urlOriginal.replace('/upload/', '/upload/q_auto,f_auto/');
+      // <--- AQUI A MÁGICA FOI APLICADA --->
+      const urlOtimizada = otimizarUrlCloudinary(data.secure_url);
 
       set('foto_url', urlOtimizada);
 

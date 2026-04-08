@@ -1,0 +1,3851 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.gitattributes
+.gitignore
+AGENTS.md
+app/components/Background.tsx
+app/components/CachedImage.tsx
+app/components/Catraca.tsx
+app/components/Navbar.tsx
+app/components/Toast.tsx
+app/favicon.ico
+app/globals.css
+app/ingressar/page.tsx
+app/layout.tsx
+app/matches/page.tsx
+app/not-found.tsx
+app/page.tsx
+app/perfil/criar/page.tsx
+app/perfil/editar/page.tsx
+app/perfil/page.tsx
+app/triagem/page.tsx
+CLAUDE.md
+eslint.config.mjs
+lib/cache.ts
+lib/cloudinary.ts
+lib/photo-cache.ts
+lib/supabase.ts
+next.config.ts
+package.json
+postcss.config.mjs
+public/LOGO.png
+public/next.svg
+public/NOME.png
+public/padrao_pb.webp
+README.md
+tsconfig.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".gitattributes">
+# Auto detect text files and perform LF normalization
+* text=auto
+</file>
+
+<file path=".gitignore">
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+</file>
+
+<file path="AGENTS.md">
+<!-- BEGIN:nextjs-agent-rules -->
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+<!-- END:nextjs-agent-rules -->
+</file>
+
+<file path="app/components/Toast.tsx">
+'use client';
+
+import { ReactNode, useState, useCallback, createContext, useContext } from 'react';
+
+type ToastType = 'success' | 'error' | 'info';
+
+type ToastItem = {
+  id: number;
+  message: string;
+  type: ToastType;
+  duration?: number;
+};
+
+const ToastContext = createContext<{
+  toast: (message: string, type?: ToastType, duration?: number) => void;
+}>({ toast: () => {} });
+
+let nextId = 0;
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  const toast = useCallback((message: string, type: ToastType = 'info', duration = 3000) => {
+    const id = nextId++;
+    setToasts(prev => [...prev, { id, message, type, duration }]);
+    if (duration > 0) {
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration);
+    }
+  }, []);
+
+  const dismiss = useCallback((id: number) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  return (
+    <ToastContext.Provider value={{ toast }}>
+      {children}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100001] flex flex-col items-center gap-2 pointer-events-none">
+        {toasts.map(t => {
+          const colors =
+            t.type === 'success'
+              ? 'bg-green-500 text-white'
+              : t.type === 'error'
+              ? 'bg-red-500 text-white'
+              : 'bg-orange-500 text-white';
+
+          const icons =
+            t.type === 'success'
+              ? '🔥'
+              : t.type === 'error'
+              ? '⚠️'
+              : '🚑';
+
+          return (
+            <div
+              key={t.id}
+              className={`pointer-events-auto animate-in slide-in-from-top duration-300 ${colors} px-6 py-3 rounded-full shadow-2xl border border-white/20 font-black italic uppercase text-[10px] tracking-widest max-w-[95vw] break-words`}
+              onClick={() => dismiss(t.id)}
+            >
+              {icons} {t.message}
+            </div>
+          );
+        })}
+      </div>
+    </ToastContext.Provider>
+  );
+}
+
+export function useToast() {
+  return useContext(ToastContext);
+}
+</file>
+
+<file path="app/not-found.tsx">
+'use client';
+
+import Link from 'next/link';
+import { Flame } from 'lucide-react';
+
+export default function NotFound() {
+  return (
+    <>
+      <div className="fixed inset-0 bg-[#0f051a] -z-20 pointer-events-none" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
+
+      <main className="flex min-h-[100dvh] flex-col items-center justify-center p-6 relative z-10">
+        <div className="text-center animate-in fade-in zoom-in-95 duration-500">
+          <div className="bg-orange-500 p-5 rounded-[2rem] shadow-[0_10px_30px_rgba(234,88,12,0.3)] mx-auto mb-8 inline-flex">
+            <Flame size={48} color="white" fill="white" />
+          </div>
+
+          <h1 className="text-8xl font-black text-white italic uppercase tracking-tighter mb-2">
+            404
+          </h1>
+          <p className="text-orange-500 font-black text-[11px] uppercase tracking-[0.3em] mb-4">
+            Fora de sintonia
+          </p>
+          <p className="text-white/30 text-xs font-medium leading-relaxed max-w-xs mx-auto mb-10">
+            Essa página nã existe... mas o rolê ainda tá rolando!
+          </p>
+
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 bg-orange-500 text-white font-black italic uppercase tracking-widest py-4 px-10 rounded-2xl shadow-xl shadow-orange-500/20 hover:bg-orange-400 active:scale-95 transition-all text-sm"
+          >
+            Voltar pra Home
+          </Link>
+        </div>
+      </main>
+    </>
+  );
+}
+</file>
+
+<file path="CLAUDE.md">
+@AGENTS.md
+</file>
+
+<file path="eslint.config.mjs">
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+</file>
+
+<file path="lib/cache.ts">
+/**
+ * Cache simples em memÃ³ria por sessÃ£o.
+ * Evita re-fetch desnecessÃ¡rio ao navegar entre pÃ¡ginas.
+ * TTL padrÃ£o: 120s (configurÃ¡vel na criaÃ§Ã£o).
+ */
+type CacheEntry<T> = {
+  data: T;
+  expiresAt: number;
+};
+
+const store: Record<string, CacheEntry<unknown>> = {};
+
+export function createCache<T>(key: string, ttlMs: number) {
+  return {
+    get(): T | null {
+      const entry = store[key];
+      if (entry && entry.expiresAt > Date.now()) return entry.data as T;
+      // expirado ou nÃ£o existe
+      if (entry) delete store[key];
+      return null;
+    },
+    set(data: T) {
+      store[key] = { data, expiresAt: Date.now() + ttlMs };
+    },
+    invalidate() {
+      delete store[key];
+    },
+  };
+}
+</file>
+
+<file path="lib/cloudinary.ts">
+export const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dcsiucytm/image/upload';
+
+// Esta função recebe a URL da foto e coloca as "regras" de otimização nela
+export function otimizarUrlCloudinary(urlOriginal: string): string {
+  if (!urlOriginal || !urlOriginal.includes('res.cloudinary.com')) return urlOriginal;
+  
+  // Se a URL já estiver otimizada, não faz nada
+  if (urlOriginal.includes('c_fill')) return urlOriginal;
+
+  // Aqui a gente diz: corta no rosto (g_face), preenche o quadrado (c_fill),
+  // limita o tamanho (w_600, h_800) e melhora o peso (q_auto, f_auto)
+  return urlOriginal.replace(
+    '/upload/',
+    '/upload/c_fill,g_face,w_600,h_800,q_auto,f_auto/'
+  );
+}
+</file>
+
+<file path="lib/photo-cache.ts">
+/**
+ * Cache persistente de fotos via Cache Storage API (nível do browser).
+ *
+ * Como funciona:
+ * 1. Primeira vez: baixa do Cloudinary → salva em disco no browser (persiste)
+ * 2. Segunda vez: serve do disco (zero request ao Cloudinary)
+ * 3. A foto persiste após fechar/reabrir/relarregar a aba
+ * 4. TTL: 7 dias (cobre todo o evento)
+ *
+ * Só some se o usuário for nas configurações do navegador e
+ * limpar os dados do site.
+ *
+ * ~60-80% redução de bandwidth no Cloudinary.
+ */
+
+const CACHE_NAME = 'im-fotos-v1';
+const TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+const cachePromise = typeof caches !== 'undefined'
+  ? caches.open(CACHE_NAME).catch(() => null)
+  : Promise.resolve(null);
+
+async function getCache() {
+  return cachePromise;
+}
+
+/** Verifica se uma foto está em cache e dentro do TTL */
+async function isValid(cache: Cache, url: string): Promise<boolean> {
+  try {
+    const resp = await cache.match(url);
+    if (!resp) return false;
+    const cachedAt = resp.headers.get('x-cached-at');
+    if (!cachedAt) return true;
+    return Date.now() - parseInt(cachedAt, 10) <= TTL_MS;
+  } catch {
+    return false;
+  }
+}
+
+/** Serve a foto do cache de disco */
+async function serveFromCache(cache: Cache, url: string): Promise<string | null> {
+  const resp = await cache.match(url);
+  if (!resp) return null;
+  const blob = await resp.blob();
+  return URL.createObjectURL(blob);
+}
+
+/** Baixa, salva em disco e retorna blob URL */
+async function downloadAndCache(cache: Cache, url: string): Promise<string | null> {
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+
+    const blob = await resp.blob();
+    const mimeType = resp.headers.get('content-type') || 'image/jpeg';
+
+    await cache.put(url, new Response(blob, {
+      headers: {
+        'content-type': mimeType,
+        'x-cached-at': Date.now().toString(),
+      },
+    }));
+
+    return URL.createObjectURL(blob);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve a URL de uma foto.
+ * Se está em cache: serve do disco.
+ * Se não est: baixa, salva em disco e serve.
+ * Se tudo falha: retorna a URL original.
+ */
+export async function getCachedSrc(url: string): Promise<string> {
+  if (!url) return url;
+
+  const cache = await getCache();
+  if (!cache) return url;
+
+  // J em cache?
+  if (await isValid(cache, url)) {
+    const cached = await serveFromCache(cache, url);
+    if (cached) return cached;
+  }
+
+  // Baixa e salva
+  const blobUrl = await downloadAndCache(cache, url);
+  if (blobUrl) return blobUrl;
+
+  // Fallback
+  return url;
+}
+
+/**
+ * Pré-carrega um lote de fotos em background.
+ */
+export async function preloadBatch(urls: string[]): Promise<void> {
+  const cache = await getCache();
+  if (!cache) return;
+
+  const urlsToPreload = [...new Set(urls)].filter(Boolean);
+
+  for (let i = 0; i < urlsToPreload.length; i += 3) {
+    const chunk = urlsToPreload.slice(i, i + 3);
+    await Promise.allSettled(chunk.map(async (url) => {
+      if (await isValid(cache, url)) return;
+      await downloadAndCache(cache, url);
+    }));
+  }
+}
+</file>
+
+<file path="lib/supabase.ts">
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+export const supabase = createClient(supabaseUrl, supabaseKey)
+</file>
+
+<file path="postcss.config.mjs">
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+</file>
+
+<file path="public/next.svg">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
+</file>
+
+<file path="README.md">
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+</file>
+
+<file path="app/components/Background.tsx">
+'use client';
+export default function Background() {
+  return <></>;
+}
+</file>
+
+<file path="app/components/CachedImage.tsx">
+import { useEffect, useState } from 'react';
+import { getCachedSrc } from '../../lib/photo-cache';
+
+/**
+ * Imagem com cache persistente.
+ *
+ * 1. Verifica se a foto já está em cache (disco)
+ * 2. Se SIM → renderiza direto do cache (zero Cloudinary)
+ * 3. Se NÃO → renderiza a URL original, depois baixa e salva em cache
+ *
+ * Na próxima sessão ou página, a foto vem do cache (zero Cloudinary).
+ *
+ * Sem blink: mantém a foto anterior visível até a nova estar pronta,
+ * com crossfade suave.
+ */
+export default function CachedImage({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+}) {
+  const [displayedSrc, setDisplayedSrc] = useState<string>(src ?? '');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!src) { setDisplayedSrc(''); setLoading(false); return; }
+
+    setLoading(true);
+    let cancelled = false;
+
+    (async () => {
+      const cached = await getCachedSrc(src);
+      if (!cancelled) {
+        setDisplayedSrc(cached);
+        setLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [src]);
+
+  if (!displayedSrc && !loading) return null;
+
+  return (
+    <img
+      src={displayedSrc}
+      alt={alt}
+      className={`${className} transition-opacity duration-200 ${loading ? 'opacity-70' : 'opacity-100'}`}
+      loading="lazy"
+      decoding="async"
+    />
+  );
+}
+</file>
+
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      // 1. Mantém o Supabase liberado (para fotos antigas que ainda estão lá)
+      {
+        protocol: 'https',
+        hostname: 'pelofnnecqpuxjwxbxhm.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**',
+      },
+      // 2. 💉 CIRURGIA: Libera o Cloudinary para as fotos novas!
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
+};
+
+export default nextConfig;
+</file>
+
+<file path="package.json">
+{
+  "name": "inter-match",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.101.0",
+    "browser-image-compression": "^2.0.2",
+    "lucide-react": "^1.7.0",
+    "next": "16.2.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+</file>
+
+<file path="app/globals.css">
+@import "tailwindcss";
+
+@layer base {
+  html, body {
+    background-color: transparent !important;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100vw;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #__next, [data-nextjs-scroll-focus-boundary] {
+    height: 100%;
+    width: 100%;
+  }
+}
+
+:focus {
+  outline: none;
+}
+</file>
+
+<file path="app/components/Catraca.tsx">
+'use client';
+
+import { useEffect, useState, useRef } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { supabase } from '../../lib/supabase';
+
+type AuthState = {
+  userId: string;
+  temPerfil: boolean;
+};
+
+const sessionCache: { current: AuthState | null } = { current: null };
+
+export default function Catraca({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [pronto, setPronto] = useState(false);
+  const verificandoRef = useRef(false);
+
+  const rotasPublicas = ['/', '/ingressar'];
+  const rotasCriarPerfil = ['/perfil/criar'];
+
+  useEffect(() => {
+    let ignorado = false;
+
+    const verificar = async () => {
+      if (verificandoRef.current) return;
+      verificandoRef.current = true;
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        // Sem sessão em rota pública → permite
+        if (rotasPublicas.includes(pathname)) {
+          if (!session) { setPronto(true); return; }
+          // Logado tentando acessar rota pública → triagem
+          router.replace('/triagem');
+          return;
+        }
+
+        // Sem sessão em rota protegida → home
+        if (!session) {
+          router.replace('/');
+          return;
+        }
+
+        // Perfil completo = tem 'nome' preenchido (registro só salva 'insta')
+        if (sessionCache.current?.userId === session.user.id) {
+          const cached = sessionCache.current;
+          if (!cached.temPerfil && !rotasCriarPerfil.includes(pathname)) {
+            router.replace('/perfil/criar');
+          } else if (cached.temPerfil && rotasCriarPerfil.includes(pathname)) {
+            router.replace('/perfil/editar');
+          }
+          if (!ignorado) setPronto(true);
+          return;
+        }
+
+        let temPerfil = false;
+        try {
+          const { data: perfil } = await supabase
+            .from('profiles')
+            .select('nome')
+            .eq('id', session.user.id)
+            .single();
+          temPerfil = !!(perfil && perfil.nome);
+          sessionCache.current = { userId: session.user.id, temPerfil };
+        } catch {
+          temPerfil = false;
+          sessionCache.current = { userId: session.user.id, temPerfil };
+        }
+
+        if (!temPerfil && !rotasCriarPerfil.includes(pathname)) {
+          router.replace('/perfil/criar');
+          return;
+        }
+        if (temPerfil && rotasCriarPerfil.includes(pathname)) {
+          router.replace('/perfil/editar');
+          return;
+        }
+      } finally {
+        verificandoRef.current = false;
+      }
+
+      if (!ignorado) setPronto(true);
+    };
+
+    verificar();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        sessionCache.current = null;
+        setPronto(false);
+        if (!rotasPublicas.includes(pathname)) router.push('/');
+      }
+    });
+
+    // Escuta quando perfil é criado pra invalidar o cache
+    const handleProfileCreated = () => {
+      sessionCache.current = null;
+    };
+    window.addEventListener('profile-created', handleProfileCreated);
+
+    return () => {
+      ignorado = true;
+      listener?.subscription.unsubscribe();
+      window.removeEventListener('profile-created', handleProfileCreated);
+    };
+  }, [pathname, router]);
+
+  if (!pronto) {
+    return (
+      <div
+        suppressHydrationWarning
+        style={{
+          display: 'flex',
+          height: '100vh',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: '#0f051a',
+        }}
+      >
+        <img
+          src="/NOME.png"
+          alt="INTERMATCH"
+          style={{ width: '200px', opacity: '0.6' }}
+        />
+        <div style={{
+          width: '40px',
+          height: '40px',
+          border: '4px solid rgba(255,255,255,0.1)',
+          borderTopColor: 'transparent',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          marginTop: '32px',
+        }} />
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+        `}</style>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+</file>
+
+<file path="app/ingressar/page.tsx">
+'use client';
+
+import { useState } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useRouter } from 'next/navigation';
+import { Flame, ChevronLeft, Eye, EyeOff, AtSign, FileText } from 'lucide-react';
+import { useToast } from '../components/Toast';
+
+export default function Registro() {
+  const [email, setEmail] = useState('');
+  const [insta, setInsta] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const [aceitouTermos, setAceitouTermos] = useState(false);
+  const [mostrarTermos, setMostrarTermos] = useState(false);
+  const { toast } = useToast();
+
+  const handleCadastrar = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // 1. Parede de Segurança: Verificação de senha dupla
+    if (password !== confirmPassword) {
+      toast('Senhas não coincidem, dá uma checada.', 'error');
+      return;
+    }
+
+    if (password.length < 6) {
+      toast('Senha precisa ter pelo menos 6 caracteres.', 'error');
+      return;
+    }
+
+    if (!insta) {
+      toast('Instagram é obrigatório pra galera te achar!', 'error');
+      return;
+    }
+
+    if (!aceitouTermos) {
+      toast('Aceite os termos de uso para continuar.', 'error');
+      return;
+    }
+
+    setLoading(true);
+    
+    // Faz a cirurgia de cadastro no banco
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert('Erro ao cadastrar: ' + error.message);
+    } else if (data.user) {
+      // Já aproveita e injeta o Instagram do cara na ficha (upsert)
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        insta: insta.replace('@', ''), // Tira o @ se o cara tiver digitado
+      });
+
+      // Alta hospitalar direta! Sem confirmar e-mail, vai reto pro perfil.
+      router.push('/perfil/criar');
+    }
+    setLoading(false);
+  };
+
+  const inputCls = 'w-full px-5 py-4 bg-black/20 border border-white/10 rounded-2xl focus:border-orange-500 focus:outline-none text-white font-bold text-xs placeholder:text-white/20 transition-all shadow-inner';
+
+  return (
+    <>
+      {/* 💉 FUNDOS GLOBAIS OBSIDIAN */}
+      <div className="fixed inset-0 bg-[#0f051a] -z-20 pointer-events-none" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
+
+      <main className="flex min-h-screen flex-col items-center justify-center p-6 relative z-10">
+        
+        <div className="w-full max-w-md bg-white/5 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-white/10 animate-in zoom-in duration-500">
+          
+          <button 
+            onClick={() => router.push('/')}
+            className="flex items-center gap-1 text-white/30 text-[10px] font-black uppercase tracking-widest hover:text-orange-500 transition-colors mb-8"
+          >
+            <ChevronLeft size={16} /> Voltar
+          </button>
+
+          <div className="flex flex-col items-center mb-8">
+            <div className="bg-orange-500 p-4 rounded-2xl shadow-[0_10px_30px_rgba(234,88,12,0.3)] mb-4">
+              <Flame size={32} color="white" fill="white" />
+            </div>
+            <h1 className="text-3xl font-black text-white italic uppercase tracking-tighter drop-shadow-lg leading-none">
+              Criar Conta<span className="text-orange-500">.</span>
+            </h1>
+            <p className="text-white/30 text-[9px] font-bold uppercase tracking-widest mt-2 text-center">
+              Garanta seu perfil na calourada
+            </p>
+          </div>
+
+          <form onSubmit={handleCadastrar} className="flex flex-col gap-5">
+            
+            {/* E-MAIL */}
+            <div>
+              <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-2 ml-1">E-mail</label>
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className={inputCls}
+                placeholder="seu@email.com"
+              />
+            </div>
+
+            {/* INSTAGRAM OBRIGATÓRIO */}
+            <div>
+              <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-2 ml-1">Instagram</label>
+              <div className="flex items-center gap-3 bg-black/20 border border-white/10 rounded-2xl px-5 py-4 focus-within:border-orange-500 transition-all shadow-inner">
+                <AtSign size={16} className="text-white/20" />
+                <input 
+                  type="text" 
+                  value={insta}
+                  onChange={(e) => setInsta(e.target.value)}
+                  required
+                  className="bg-transparent flex-1 outline-none text-white font-bold text-xs placeholder:text-white/20"
+                  placeholder="seu.insta" 
+                />
+              </div>
+            </div>
+
+            {/* SENHA */}
+            <div>
+              <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-2 ml-1">Senha</label>
+              <div className="relative">
+                <input 
+                  type={mostrarSenha ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className={inputCls + " pr-12"}
+                  placeholder="Mínimo 6 caracteres"
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setMostrarSenha(!mostrarSenha)} 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-orange-500 transition-colors"
+                >
+                  {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* CONFIRMAR SENHA */}
+            <div>
+              <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-2 ml-1">Confirmar Senha</label>
+              <div className="relative">
+                <input
+                  type={mostrarSenha ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className={inputCls + " pr-12"}
+                  placeholder="Repita sua senha"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha(!mostrarSenha)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-orange-500 transition-colors"
+                >
+                  {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* TERMOS DE USO */}
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                checked={aceitouTermos}
+                onChange={(e) => setAceitouTermos(e.target.checked)}
+                id="termos"
+                className="mt-1 w-4 h-4 rounded border-white/20 bg-black/20 accent-orange-500 focus:ring-orange-500 cursor-pointer"
+              />
+              <label htmlFor="termos" className="text-white/40 text-[10px] font-bold leading-relaxed cursor-pointer select-none">
+                Li e aceito os{' '}
+                <button
+                  type="button"
+                  onClick={() => setMostrarTermos(true)}
+                  className="text-orange-400 hover:text-orange-300 underline underline-offset-2 transition-colors"
+                >
+                  Termos de Uso
+                </button>{' '}
+                e a{' '}
+                <button
+                  type="button"
+                  onClick={() => setMostrarTermos(true)}
+                  className="text-orange-400 hover:text-orange-300 underline underline-offset-2 transition-colors"
+                >
+                  Política de Privacidade
+                </button>{' '}
+                do InterMatch
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-orange-500 text-white font-black italic uppercase tracking-widest py-4 rounded-2xl hover:bg-orange-400 transition-all shadow-lg shadow-orange-500/20 active:scale-95 disabled:opacity-50 text-sm mt-4"
+            >
+              {loading ? 'PROCESSANDO...' : 'CRIAR CONTA'}
+            </button>
+
+          </form>
+        </div>
+      </main>
+
+      {/* MODAL TERMOS DE USO */}
+      {mostrarTermos && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/90" onClick={() => setMostrarTermos(false)}>
+          <div className="relative w-full max-w-lg bg-[#0f051a] backdrop-blur-xl rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/10 animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 px-8 py-5 border-b border-white/5 flex items-center justify-between" style={{ background: 'rgba(15, 5, 26, 0.95)', backdropFilter: 'blur(20px)' }}>
+              <div className="flex items-center gap-3">
+                <FileText size={20} className="text-orange-500" />
+                <h2 className="text-[11px] font-black text-white uppercase italic tracking-widest">Termos de Uso e Privacidade</h2>
+              </div>
+              <button onClick={() => setMostrarTermos(false)} className="text-white/30 hover:text-white transition-colors text-xl leading-none">&times;</button>
+            </div>
+
+            <div className="overflow-y-auto px-8 py-6 text-[11px] text-white/50 leading-relaxed space-y-5 flex-1">
+              <p className="text-white/70 text-xs font-medium">Bem-vindo ao Inter-Match! Antes de criar sua conta e começar a usar o aplicativo, é obrigatório que você leia e concorde com as regras abaixo.</p>
+
+              <div>
+                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">1. Natureza do Aplicativo</p>
+                <p>O Inter-Match é uma iniciativa 100% recreativa e sem fins lucrativos, criada exclusivamente para promover a interação entre os participantes da festa do InterCE, organizada pela Alcateia. O aplicativo não possui vínculo comercial e não garante encontros ou qualquer tipo de resultado no mundo real.</p>
+              </div>
+
+              <div>
+                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">2. Declaração de Maioridade</p>
+                <p>Ao se cadastrar, você declara expressamente ter 18 (dezoito) anos de idade completos ou mais. O uso deste aplicativo por menores de idade é estritamente proibido.</p>
+              </div>
+
+              <div>
+                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">3. Direitos de Imagem e Conteúdo</p>
+                <p>Ao enviar uma foto para o banco de dados, você concede permissão para que sua imagem seja exibida dentro do app, declara ser autor ou possuir os direitos de uso, e assume total responsabilidade pelo conteúdo enviado.</p>
+              </div>
+
+              <div>
+                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">4. Conduta do Usuário</p>
+                <p>É terminantemente proibido: criação de perfis falsos, envio de nudez explícita ou violência, e qualquer tipo de discurso de ódio, assédio, racismo, homofobia ou ofensa. Perfis infratores serão excluídos sem aviso prévio.</p>
+              </div>
+
+              <div>
+                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">5. Isenção de Responsabilidade e Independência</p>
+                <p>O app é fornecido &quot;no estado em que se encontra&quot;, sem garantias. O Inter-Match é independente — o evento InterCE, a empresa SOMOS, e os patrocinadores Medway e Nymu não possuem qualquer vínculo com este aplicativo e estão isentos de responsabilidade.</p>
+              </div>
+
+              <div>
+                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">6. Proteção de Dados</p>
+                <p>Os dados coletados serão utilizados única e exclusivamente para o funcionamento do aplicativo durante o período relacionado ao evento do InterCE.</p>
+              </div>
+
+              <div>
+                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">7. Foro</p>
+                <p>Estes termos são regidos pelas leis brasileiras. Para dirimir quaisquer controvérsias, fica eleito o foro da Comarca de Sobral - CE.</p>
+              </div>
+            </div>
+
+            <div className="px-8 py-5 border-t border-white/5">
+              <button
+                onClick={() => { setAceitouTermos(true); setMostrarTermos(false); }}
+                className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all shadow-2xl bg-orange-500 text-white hover:bg-orange-400 shadow-orange-500/20 active:scale-95"
+              >
+                Li e Aceito os Termos
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+</file>
+
+<file path="app/components/Navbar.tsx">
+'use client';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect, useState, useRef } from 'react';
+import { Flame, Heart, User } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { createCache } from '../../lib/cache';
+
+const matchCountCache = createCache<number>('match-count', 30_000);
+
+type LucideIconType = React.ComponentType<{
+  size?: string | number;
+  fill?: string;
+  className?: string;
+  strokeWidth?: number;
+  style?: React.CSSProperties;
+}>;
+
+function NavItem({
+  href,
+  icon: Icon,
+  label,
+  active,
+  badge,
+}: {
+  href: string;
+  icon: LucideIconType;
+  label: string;
+  active: boolean;
+  badge?: number;
+}) {
+  return (
+    <Link
+      href={href}
+      className="relative flex flex-col items-center justify-center w-[86px] h-[52px] rounded-3xl select-none transition-all duration-300 ease-out active:scale-95"
+      style={
+        active
+          ? {
+              background: '#220d45',
+              boxShadow: 'inset 0 0 0 1px rgba(120,50,220,0.3)',
+            }
+          : undefined
+      }
+    >
+      <div className="flex flex-col items-center justify-center gap-[5px]">
+        <div className="relative">
+          <Icon
+            size={22}
+            strokeWidth={1.8}
+            fill={active ? 'rgba(255,106,0,0.1)' : 'none'}
+            className="transition-all duration-300"
+            style={{
+              color: active ? '#ff6a00' : 'rgba(150,100,255,0.35)',
+              filter: active
+                ? 'drop-shadow(0 0 4px rgba(255,106,0,0.55))'
+                : undefined,
+            }}
+          />
+          {badge !== undefined && badge > 0 ? (
+            <span
+              className="absolute -top-1 -right-2 min-w-[16px] h-4 flex items-center justify-center rounded-full text-[9px] font-bold px-1"
+              style={{
+                background: '#ff6a00',
+                color: '#fff',
+                boxShadow: '0 0 8px rgba(255,106,0,0.6)',
+              }}
+            >
+              {badge > 50 ? '50+' : badge}
+            </span>
+          ) : null}
+        </div>
+        <span
+          className="text-[9.5px] font-bold uppercase leading-none transition-all duration-300"
+          style={{
+            letterSpacing: active ? '0.13em' : '0.1em',
+            color: active ? '#ff8040' : 'rgba(150,100,255,0.35)',
+          }}
+        >
+          {label}
+        </span>
+      </div>
+
+      <div
+        className="absolute bottom-[3px] left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full transition-all duration-300"
+        style={
+          active
+            ? { background: '#ff6a00', boxShadow: '0 0 6px rgba(255,106,0,0.6)', opacity: 1 }
+            : { opacity: 0 }
+        }
+      />
+    </Link>
+  );
+}
+
+export default function Navbar() {
+  const pathname = usePathname();
+  const [matchCount, setMatchCount] = useState(0);
+  const userRef = useRef<string | null>(null);
+
+  const fetchMatchCount = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return;
+      userRef.current = user.id;
+
+      const { data: meusLikes } = await supabase
+        .from('likes').select('receiver_id')
+        .eq('sender_id', user.id).eq('liked', true);
+
+      const { data: likesRecebidos } = await supabase
+        .from('likes').select('sender_id')
+        .eq('receiver_id', user.id).eq('liked', true);
+
+      if (meusLikes && likesRecebidos) {
+        const idsMeusLikes = meusLikes.map(l => l.receiver_id);
+        const idsLikesRecebidos = likesRecebidos.map(l => l.sender_id);
+        const count = idsMeusLikes.filter(id => idsLikesRecebidos.includes(id)).length;
+        matchCountCache.set(count);
+        setMatchCount(count);
+      }
+    } catch {
+      // silencioso — badge não é crítico
+    }
+  };
+
+  useEffect(() => {
+    const cached = matchCountCache.get();
+    if (cached !== null) { setMatchCount(cached); return; }
+    fetchMatchCount();
+  }, [pathname]);
+
+  // Supabase Realtime: escuta MUDANÇAS (agora super otimizado e seguro)
+  useEffect(() => {
+    const rotasSemNavbar = ['/', '/ingressar'];
+    if (rotasSemNavbar.includes(pathname)) return;
+
+    let channel: ReturnType<typeof supabase.channel>;
+
+    const setupRealtime = async () => {
+      // 1. Pega a sessão para sabermos o ID do usuário local
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      // 2. Abre o canal APENAS para INSERTs onde ele é o "receiver_id"
+      channel = supabase
+        .channel('match-count')
+        .on(
+          'postgres_changes',
+          { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'likes',
+            filter: `receiver_id=eq.${session.user.id}` // 👈 MÁGICA DE PROTEÇÃO AQUI
+          },
+          () => {
+            // Só roda isso se ALGUÉM der like NELE
+            matchCountCache.invalidate();
+            fetchMatchCount();
+          }
+        )
+        .subscribe();
+    };
+
+    setupRealtime();
+
+    // Também escuta evento global de match criado (ex: quando ele próprio dá like)
+    const onMatchCreated = () => {
+      matchCountCache.invalidate();
+      fetchMatchCount();
+    };
+    window.addEventListener('match-created', onMatchCreated);
+
+    return () => {
+      // Remove o canal de forma segura caso o componente seja desmontado
+      if (channel) supabase.removeChannel(channel);
+      window.removeEventListener('match-created', onMatchCreated);
+    };
+  }, [pathname]);
+
+  const rotasSemNavbar = ['/', '/ingressar', '/perfil/editar'];
+  if (rotasSemNavbar.includes(pathname)) return null;
+
+  return (
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-[9999] flex items-center justify-center"
+      style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+    >
+      <div
+        className="relative flex items-center justify-between w-80 h-[64px] rounded-[32px] px-2.5"
+        style={{
+          background: '#17092b',
+          boxShadow: '0 0 0 1px rgba(110,55,200,0.3), 0 12px 36px rgba(0,0,0,0.55)',
+        }}
+      >
+        <NavItem
+          href="/triagem"
+          icon={Flame}
+          label="Triagem"
+          active={pathname === '/triagem'}
+        />
+        <NavItem
+          href="/matches"
+          icon={Heart}
+          label="Matches"
+          active={pathname === '/matches'}
+          badge={matchCount}
+        />
+        <NavItem
+          href="/perfil"
+          icon={User}
+          label="Você"
+          active={pathname.startsWith('/perfil')}
+        />
+      </div>
+    </nav>
+  );
+}
+</file>
+
+<file path="app/perfil/criar/page.tsx">
+'use client';
+
+import { useEffect, useState, useRef } from 'react';
+import { supabase } from '../../../lib/supabase';
+import { useRouter } from 'next/navigation';
+import { Camera, ArrowLeft, ArrowRight, Loader2, AtSign, Check, ChevronDown, Shield, FileText, AlertTriangle } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
+
+// Importe o helper no topo do arquivo
+import { otimizarUrlCloudinary } from '../../../lib/cloudinary';
+
+// ─── DADOS DAS ATLÉTICAS ───────────────────────────────────────────────────────
+const ATLETICAS = {
+  '1ª Divisão': [
+    { nome: 'Alcateia',     curso: 'Medicina', instituicao: 'UFC Sobral' },
+    { nome: 'Audácia',      curso: 'Medicina', instituicao: 'Unichristus' },
+    { nome: 'Espartana',    curso: 'Medicina', instituicao: 'IDOMED Juazeiro' },
+    { nome: 'Fulminante',   curso: 'Medicina', instituicao: 'UECE' },
+    { nome: 'Ira',          curso: 'Medicina', instituicao: 'UNINTA Sobral' },
+    { nome: 'Kariris',      curso: 'Medicina', instituicao: 'UFCA Barbalha' },
+    { nome: 'Selvagem',     curso: 'Medicina', instituicao: 'UFC Fortaleza' },
+    { nome: 'Tenebrosa',    curso: 'Medicina', instituicao: 'UNIFOR' },
+  ],
+  '2ª Divisão': [
+    { nome: 'Invocada',     curso: 'Medicina', instituicao: 'IDOMED Quixadá' },
+    { nome: 'Caçadora',     curso: 'Medicina', instituicao: 'UECE Crateús' },
+    { nome: 'Perversa',     curso: 'Medicina', instituicao: 'UNINTA Itapipoca' },
+    { nome: 'Aniquiladora', curso: 'Medicina', instituicao: 'IDOMED Iguatu' },
+  ],
+  'Convidadas': [
+    { nome: 'Voraz',         curso: 'Medicina', instituicao: 'F5 Sobral' },
+    { nome: 'Tirana',        curso: 'Medicina', instituicao: 'UECE Quixeramobim' },
+    { nome: 'Exterminadora', curso: 'Medicina', instituicao: 'URCA Cariri' },
+  ],
+} as const;
+
+const TODAS_ATLETICAS = Object.values(ATLETICAS).flat();
+
+const CARGOS = [
+  'Presidente',
+  'Diretor',
+  'Organizador',
+  'Técnico',
+  'Esportista / Jogador',
+  'Egresso',
+  'Acadêmico',
+];
+
+// ─── TIPOS ────────────────────────────────────────────────────────────────────
+type TipoParticipante = 'atletica' | 'convidado' | null;
+type TipoParticipacao = 'festa' | 'completo' | null;
+
+type OnboardingData = {
+  tipo: TipoParticipante;
+  atletica: string;
+  cargo: string;
+  participacao: TipoParticipacao;
+  // Perfil
+  nome: string;
+  idade: string;
+  genero: string;
+  orientacao: string;
+  curso: string;
+  instituicao: string;
+  insta: string;
+  foto_url: string;
+  ver_homem: boolean;
+  ver_mulher: boolean;
+  ver_nb: boolean;
+  mostrar_curso: boolean;
+  mostrar_orientacao: boolean;
+  aceitouTermos: boolean;
+};
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+const calcCompletion = (f: OnboardingData) => {
+  const fields = [f.nome, f.idade, f.foto_url, f.insta];
+  return Math.round((fields.filter(Boolean).length / fields.length) * 100);
+};
+
+// ─── SUB-COMPONENTES ──────────────────────────────────────────────────────────
+function CompletionRing({ pct }: { pct: number }) {
+  const r = 54;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  return (
+    <svg viewBox="0 0 120 120" className="absolute inset-0 w-full h-full pointer-events-none" style={{ transform: 'rotate(-90deg)' }}>
+      <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="2" />
+      <circle cx="60" cy="60" r={r} fill="none" stroke="#f97316" strokeWidth="3" strokeLinecap="round"
+        strokeDasharray={`${dash} ${circ}`} style={{ transition: 'stroke-dasharray 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
+    </svg>
+  );
+}
+
+function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-center justify-between cursor-pointer group bg-white/[0.02] hover:bg-white/[0.05] px-4 py-3 rounded-xl border border-white/5 transition-all mt-2">
+      <span className="text-[10px] font-black uppercase tracking-widest text-white/30 group-hover:text-orange-400 transition-colors">{label}</span>
+      <div className={`relative w-10 h-6 rounded-full transition-colors ${checked ? 'bg-orange-500' : 'bg-black/50 border border-white/10'}`}>
+        <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
+      </div>
+      <input type="checkbox" className="sr-only" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    </label>
+  );
+}
+
+function LiveCard({ f, completion }: { f: OnboardingData; completion: number }) {
+  const atleticaInfo = TODAS_ATLETICAS.find(a => a.nome === f.atletica);
+  return (
+    <div className="w-full flex flex-col items-center gap-6">
+      <div className="relative w-[160px] h-[160px] shrink-0">
+        <CompletionRing pct={completion} />
+        <div className="absolute inset-[12px] rounded-full overflow-hidden bg-zinc-900 border border-white/10 shadow-2xl">
+          {f.foto_url ? (
+            <img src={f.foto_url} alt="foto" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-white/5"><Camera size={32} /></div>
+          )}
+        </div>
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-[9px] font-black px-3 py-1 rounded-full leading-none shadow-lg border border-orange-400 uppercase tracking-tighter">
+          {completion}% completo
+        </div>
+      </div>
+
+      <div className="text-center px-4">
+        <h2 className="text-white font-black text-2xl italic leading-none tracking-tight uppercase">
+          {f.nome || <span className="text-white/10 not-italic font-normal">Seu Nome</span>}
+          {f.nome && f.idade && <span className="text-orange-500">, {f.idade}</span>}
+        </h2>
+        {f.mostrar_curso && (f.curso || f.instituicao) && (
+          <p className="text-white/30 text-[9px] font-black mt-2 uppercase tracking-[0.2em] leading-tight">
+            {[f.curso, f.instituicao].filter(Boolean).join(' · ')}
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2 justify-center max-w-[280px]">
+        {f.genero && (
+          <span className="bg-white/5 border border-white/10 text-white/50 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">{f.genero}</span>
+        )}
+        {f.mostrar_orientacao && f.orientacao && (
+          <span className="bg-orange-500/10 border border-orange-500/20 text-orange-400/80 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">{f.orientacao}</span>
+        )}
+        {f.atletica && (
+          <span className="bg-orange-500/20 border border-orange-500/30 text-orange-300 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">⚔ {f.atletica}</span>
+        )}
+        {f.cargo && (
+          <span className="bg-white/5 border border-white/10 text-white/40 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">{f.cargo}</span>
+        )}
+        {f.insta && (
+          <span className="bg-black/40 border border-white/5 text-white/40 text-[8px] font-bold px-3 py-1.5 rounded-full lowercase flex items-center gap-1">
+            <AtSign size={10} /> {f.insta}
+          </span>
+        )}
+        {f.participacao && (
+          <span className={`text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest border ${f.participacao === 'completo' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'}`}>
+            {f.participacao === 'completo' ? '🎉 Evento Completo' : '🎊 Só a Festa'}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── STEP TERMOS DE USO ─────────────────────────────────────────────────────
+function StepTermos({ f, set }: { f: OnboardingData; set: (k: keyof OnboardingData, v: any) => void }) {
+  return (
+    <div className="flex flex-col gap-6 animate-fadein">
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          <Shield size={24} className="text-orange-500" />
+          <h1 className="text-3xl font-black text-white uppercase italic tracking-tight leading-none">Termos de Uso<span className="text-orange-500">.</span></h1>
+        </div>
+        <p className="text-white/30 text-xs mt-3 font-medium leading-relaxed">É obrigatório ler e aceitar as regras antes de criar sua conta.</p>
+      </div>
+
+      <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 text-xs text-white/50 leading-relaxed space-y-4 max-h-[400px] overflow-y-auto">
+        <div>
+          <p className="text-white font-bold text-[11px] uppercase tracking-wider mb-1">Bem-vindo ao Inter-Match!</p>
+          <p>Antes de criar sua conta e começar a usar o aplicativo, é obrigatório que você leia e concorde com as regras abaixo. Ao clicar em {"\""}Aceitar{"\""}, você confirma que compreendeu e concorda com todas as condições descritas.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">1. Natureza do Aplicativo</p>
+          <p>O Inter-Match é uma iniciativa 100% recreativa e sem fins lucrativos, criada exclusivamente para promover a interação entre os participantes da festa do InterCE, organizada pela Alcateia. O aplicativo não possui vínculo comercial e não garante encontros ou qualquer tipo de resultado no mundo real.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">2. Declaração de Maioridade</p>
+          <p>Ao se cadastrar, você declara expressamente ter 18 (dezoito) anos de idade completos ou mais. O uso deste aplicativo por menores de idade é estritamente proibido. Caso seja identificada a presença de menores, a conta será imediatamente banida.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">3. Direitos de Imagem e Conteúdo</p>
+          <p>Ao enviar uma foto para o nosso banco de dados, você concede permissão para que sua imagem seja exibida para outros usuários dentro do aplicativo. Você declara que a imagem enviada é de sua própria autoria ou que possui os direitos de uso sobre ela, e assume total responsabilidade pelo conteúdo da foto enviada.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">4. Conduta do Usuário e Proibições</p>
+          <p>É terminantemente proibido: criação de perfis falsos ou uso de fotos de outras pessoas sem autorização; envio de imagens contendo nudez explícita, violência ou material impróprio; qualquer tipo de discurso de ódio, assédio, racismo, homofobia ou ofensa a outros usuários. Perfis que violarem essas regras serão imediatamente excluídos sem aviso prévio.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">5. Isenção de Responsabilidade</p>
+          <p>O aplicativo é fornecido {"\""}no estado em que se encontra{"\""}, sem garantias de funcionamento ininterrupto. O Inter-Match é uma iniciativa estritamente independente — o evento InterCE, a empresa SOMOS, e os patrocinadores Medway e Nymu não possuem qualquer vínculo legal, administrativo, financeiro ou de desenvolvimento com este aplicativo.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">6. Proteção de Dados (Privacidade)</p>
+          <p>Os dados coletados (nome, foto, informações de perfil) serão utilizados única e exclusivamente para o funcionamento do aplicativo durante o período relacionado ao evento do InterCE.</p>
+        </div>
+
+        <div className="border-t border-white/5 pt-4">
+          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">7. Disposições Gerais e Foro</p>
+          <p>Estes termos são regidos pelas leis brasileiras. Para dirimir quaisquer controvérsias decorrentes do uso do aplicativo, fica eleito o foro da Comarca de Sobral - CE.</p>
+        </div>
+      </div>
+
+      <label className="flex items-start gap-4 cursor-pointer group bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/20 rounded-xl px-5 py-4 transition-all mt-2">
+        <div className={`relative w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${f.aceitouTermos ? 'border-orange-500 bg-orange-500' : 'border-white/20'}`}>
+          {f.aceitouTermos && <Check size={14} className="text-white" />}
+        </div>
+        <div>
+          <span className={`text-xs ${f.aceitouTermos ? 'text-white/30' : 'text-white/20'}`}>
+            Marcar caixa para aceitar os termos acima.
+          </span>
+          <p className="text-white/30 text-[10px] mt-0.5">É obrigatório aceitar para continuar.</p>
+        </div>
+        <input type="checkbox" className="sr-only" checked={f.aceitouTermos} onChange={(e) => set('aceitouTermos', e.target.checked)} />
+      </label>
+    </div>
+  );
+}
+
+// ─── SECTION ─────────────────────────────────────────────────────────────────
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-10">
+      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-6 ml-1">{title}</p>
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="group">
+      <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-2 group-focus-within:text-orange-500 transition-colors ml-1">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const inputCls = 'w-full bg-black/60 hover:bg-black/70 border border-white/10 rounded-xl px-4 py-4 focus:border-orange-500/50 focus:bg-black/70 outline-none text-white font-bold text-sm transition-all placeholder:text-white/25 shadow-inner ';
+const selectCls = 'w-full bg-black/60 hover:bg-black/70 border border-white/10 rounded-xl px-4 py-4 focus:border-orange-500/50 outline-none text-white font-bold text-sm transition-all cursor-pointer appearance-none shadow-inner ';
+
+// ─── STEP INDICATOR ───────────────────────────────────────────────────────────
+function StepBar({ step, total }: { step: number; total: number }) {
+  return (
+    <div className="flex gap-1.5 items-center">
+      {Array.from({ length: total }).map((_, i) => (
+        <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i < step ? 'bg-orange-500' : i === step - 1 ? 'bg-orange-500 w-6' : 'bg-white/10 w-3'}`}
+          style={{ width: i === step - 1 ? 24 : 12 }} />
+      ))}
+    </div>
+  );
+}
+
+// ─── STEP 1: TIPO DE PARTICIPANTE ─────────────────────────────────────────────
+function Step1({ f, set }: { f: OnboardingData; set: (k: keyof OnboardingData, v: any) => void }) {
+  return (
+    <div className="flex flex-col gap-6 animate-fadein">
+      <div>
+        <h1 className="text-3xl font-black text-white uppercase italic tracking-tight leading-none">Quem é você<span className="text-orange-500">?</span></h1>
+        <p className="text-white/30 text-xs mt-3 font-medium leading-relaxed">Conta pra gente como você está participando do evento.</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 mt-2">
+        <button
+          onClick={() => set('tipo', 'atletica')}
+          className={`group relative overflow-hidden rounded-2xl border p-6 text-left  shadow-lg active:scale-[0.98] transition-all duration-300 bg-black/60 ${f.tipo === 'atletica' ? 'border-orange-500/60 ring-1 ring-inset ring-orange-500/20' : 'border-white/10 hover:border-white/25 hover:bg-black/70'}`}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-2xl mb-2">⚔️</div>
+              <p className="text-white font-black text-base uppercase tracking-wide">Membro de Atlética</p>
+              <p className="text-white/50 text-xs mt-1.5 leading-relaxed font-medium">Faço parte de uma atlética de medicina e estou representando minha equipe.</p>
+            </div>
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ml-4 mt-1 transition-all ${f.tipo === 'atletica' ? 'border-orange-500 bg-orange-500' : 'border-white/30'}`}>
+              {f.tipo === 'atletica' && <Check size={12} className="text-white" />}
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => set('tipo', 'convidado')}
+          className={`group relative overflow-hidden rounded-2xl border p-6 text-left  shadow-lg active:scale-[0.98] transition-all duration-300 bg-black/60 ${f.tipo === 'convidado' ? 'border-orange-500/60 ring-1 ring-inset ring-orange-500/20' : 'border-white/10 hover:border-white/25 hover:bg-black/70'}`}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-2xl mb-2">🎟️</div>
+              <p className="text-white font-black text-base uppercase tracking-wide">Convidado</p>
+              <p className="text-white/50 text-xs mt-1.5 leading-relaxed font-medium">Estou participando como visitante ou convidado do evento.</p>
+            </div>
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ml-4 mt-1 transition-all ${f.tipo === 'convidado' ? 'border-orange-500 bg-orange-500' : 'border-white/30'}`}>
+              {f.tipo === 'convidado' && <Check size={12} className="text-white" />}
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── STEP 2: ATLÉTICA + CARGO (só se for membro) ──────────────────────────────
+function Step2Atletica({ f, set }: { f: OnboardingData; set: (k: keyof OnboardingData, v: any) => void }) {
+  const handleAtletica = (nome: string) => {
+    const info = TODAS_ATLETICAS.find(a => a.nome === nome);
+    set('atletica', nome);
+    if (info) {
+      set('curso', info.curso);
+      set('instituicao', info.instituicao);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-6 animate-fadein">
+      <div>
+        <h1 className="text-3xl font-black text-white uppercase italic tracking-tight leading-none">Sua Atlética<span className="text-orange-500">.</span></h1>
+        <p className="text-white/30 text-xs mt-3 font-medium leading-relaxed">Selecione sua equipe e seu cargo dentro dela.</p>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <Field label="Atlética">
+          <div className="relative">
+            <select className={selectCls} value={f.atletica} onChange={(e) => handleAtletica(e.target.value)}>
+              <option value="">Selecione sua atlética</option>
+              {Object.entries(ATLETICAS).map(([divisao, lista]) => (
+                <optgroup key={divisao} label={`── ${divisao} ──`}>
+                  {lista.map(a => (
+                    <option key={a.nome} value={a.nome}>{a.nome}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
+          </div>
+        </Field>
+
+        {f.atletica && (
+          <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+            <p className="text-white/50 text-xs font-bold">
+              <span className="text-orange-400 font-black">{f.atletica}</span>
+              {' · '}{f.curso} · {f.instituicao}
+            </p>
+          </div>
+        )}
+
+        <Field label="Cargo na Atlética">
+          <div className="relative">
+            <select className={selectCls} value={f.cargo} onChange={(e) => set('cargo', e.target.value)}>
+              <option value="">Selecione seu cargo</option>
+              {CARGOS.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
+          </div>
+        </Field>
+      </div>
+    </div>
+  );
+}
+
+// ─── STEP 2B: PARTICIPAÇÃO NO EVENTO ─────────────────────────────────────────
+function StepParticipacao({ f, set }: { f: OnboardingData; set: (k: keyof OnboardingData, v: any) => void }) {
+  return (
+    <div className="flex flex-col gap-6 animate-fadein">
+      <div>
+        <h1 className="text-3xl font-black text-white uppercase italic tracking-tight leading-none">Participação<span className="text-orange-500">.</span></h1>
+        <p className="text-white/30 text-xs mt-3 font-medium leading-relaxed">Como você vai curtir o evento?</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 mt-2">
+        <button
+          onClick={() => set('participacao', 'festa')}
+          className={`rounded-2xl border p-6 text-left  shadow-lg active:scale-[0.98] transition-all duration-300 bg-black/60 ${f.participacao === 'festa' ? 'border-yellow-500/60 ring-1 ring-inset ring-yellow-500/20' : 'border-white/10 hover:border-white/25 hover:bg-black/70'}`}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-2xl mb-2">🎊</div>
+              <p className="text-white font-black text-base uppercase tracking-wide">Só a Festa</p>
+              <p className="text-white/50 text-xs mt-1.5 leading-relaxed font-medium">Vou apenas para a festa aberta do 1° dia.</p>
+            </div>
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ml-4 mt-1 transition-all ${f.participacao === 'festa' ? 'border-yellow-500 bg-yellow-500' : 'border-white/30'}`}>
+              {f.participacao === 'festa' && <Check size={12} className="text-white" />}
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => set('participacao', 'completo')}
+          className={`rounded-2xl border p-6 text-left  shadow-lg active:scale-[0.98] transition-all duration-300 bg-black/60 ${f.participacao === 'completo' ? 'border-green-500/60 ring-1 ring-inset ring-green-500/20' : 'border-white/10 hover:border-white/25 hover:bg-black/70'}`}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-2xl mb-2">🎉</div>
+              <p className="text-white font-black text-base uppercase tracking-wide">Evento Completo</p>
+              <p className="text-white/50 text-xs mt-1.5 leading-relaxed font-medium">Vou participar de todos os dias e competições do evento.</p>
+            </div>
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ml-4 mt-1 transition-all ${f.participacao === 'completo' ? 'border-green-500 bg-green-500' : 'border-white/30'}`}>
+              {f.participacao === 'completo' && <Check size={12} className="text-white" />}
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── STEP PERFIL ──────────────────────────────────────────────────────────────
+function StepPerfil({ f, set, onUpload, uploading, fileInputRef }: {
+  f: OnboardingData;
+  set: (k: keyof OnboardingData, v: any) => void;
+  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  uploading: boolean;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+}) {
+  return (
+    <div className="flex flex-col gap-2 animate-fadein">
+      <div className="mb-4">
+        <h1 className="text-3xl font-black text-white uppercase italic tracking-tight leading-none">Seu Perfil<span className="text-orange-500">.</span></h1>
+        <p className="text-white/30 text-xs mt-3 font-medium leading-relaxed">Quase lá! Agora conte mais sobre você.</p>
+      </div>
+
+      <Section title="Identidade">
+        <div className="grid grid-cols-3 gap-4 mb-5">
+          <div className="col-span-2"><Field label="Nome"><input className={inputCls} value={f.nome} onChange={(e) => set('nome', e.target.value)} placeholder="Seu nome" /></Field></div>
+          <Field label="Idade"><input type="number" className={inputCls} value={f.idade} onChange={(e) => set('idade', e.target.value)} placeholder="Sua idade" /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Gênero">
+            <div className="relative">
+              <select className={selectCls} value={f.genero} onChange={(e) => set('genero', e.target.value)}>
+                <option value="Homem">Homem</option><option value="Mulher">Mulher</option><option value="Não Binário">NB</option>
+              </select>
+              <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
+            </div>
+          </Field>
+          <div>
+            <Field label="Orientação">
+              <div className="relative">
+                <select className={selectCls} value={f.orientacao} onChange={(e) => set('orientacao', e.target.value)}>
+                  <option value="Hétero">Hétero</option><option value="Bi">Bi</option><option value="Gay">Gay</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
+              </div>
+            </Field>
+            <Toggle label="Mostrar no perfil" checked={f.mostrar_orientacao} onChange={(val) => set('mostrar_orientacao', val)} />
+          </div>
+        </div>
+      </Section>
+
+      {/* Acadêmico só aparece para convidados (atlética já é preenchido auto) */}
+      {f.tipo === 'convidado' && (
+        <Section title="Acadêmico">
+          <div className="grid grid-cols-2 gap-4 mb-3">
+            <Field label="Curso"><input className={inputCls} value={f.curso} onChange={(e) => set('curso', e.target.value)} placeholder="Medicina" /></Field>
+            <Field label="Faculdade"><input className={inputCls} value={f.instituicao} onChange={(e) => set('instituicao', e.target.value)} placeholder="UFC" /></Field>
+          </div>
+          <Toggle label="Mostrar curso e facul" checked={f.mostrar_curso} onChange={(val) => set('mostrar_curso', val)} />
+        </Section>
+      )}
+
+      {f.tipo === 'atletica' && (
+        <Section title="Acadêmico">
+          <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl px-4 py-3 flex items-center gap-3 mb-3">
+            <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+            <p className="text-white/50 text-xs font-bold">
+              <span className="text-orange-400 font-black">{f.atletica}</span> · {f.curso} · {f.instituicao}
+            </p>
+          </div>
+          <Toggle label="Mostrar curso e facul" checked={f.mostrar_curso} onChange={(val) => set('mostrar_curso', val)} />
+        </Section>
+      )}
+
+      <Section title="Foto">
+        <input type="file" ref={fileInputRef} onChange={onUpload} accept="image/*" className="hidden" />
+        <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="w-full group rounded-2xl border border-dashed border-white/10 hover:border-orange-500/40 hover:bg-white/[0.02] transition-all p-8 flex flex-col items-center gap-4">
+          {f.foto_url ? (
+            <>
+              <div className="w-20 h-20 rounded-2xl overflow-hidden ring-1 ring-white/10 group-hover:ring-orange-500/50"><img src={f.foto_url} className="w-full h-full object-cover" alt="foto" /></div>
+              <span className="text-[9px] font-black uppercase tracking-widest text-white/20 group-hover:text-orange-500">Trocar Imagem</span>
+            </>
+          ) : (
+            <>
+              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-all">
+                {uploading ? <Loader2 size={20} className="text-orange-500 animate-spin" /> : <Camera size={20} className="text-white/20" />}
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Upload de Foto</span>
+            </>
+          )}
+        </button>
+      </Section>
+
+      <Section title="Radar de Plantão">
+        <div className="flex gap-2">
+          {[{ key: 'ver_homem', label: 'Homens', sym: '♂' }, { key: 'ver_mulher', label: 'Mulheres', sym: '♀' }, { key: 'ver_nb', label: 'NB', sym: '⚧' }].map(({ key, label, sym }) => {
+            const active = f[key as keyof OnboardingData] as boolean;
+            return (
+              <button key={key} onClick={() => set(key as keyof OnboardingData, !active)} className={`flex-1 py-4 rounded-xl border transition-all ${active ? 'border-orange-500/50 bg-orange-500/10 text-orange-400' : 'border-white/5 bg-white/5 text-white/20'}`}>
+                <div className="text-xl mb-1">{sym}</div>
+                <div className="text-[8px] font-black uppercase tracking-widest">{label}</div>
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section title="Instagram *">
+        <div className="flex items-center gap-3 bg-black/60  border border-white/10 rounded-xl px-4 py-4 focus-within:border-orange-500/50 transition-all">
+          <AtSign size={16} className="text-white/20" />
+          <input className="bg-transparent flex-1 outline-none text-white font-bold text-sm placeholder:text-white/10" value={f.insta} onChange={(e) => set('insta', e.target.value.replace('@', ''))} placeholder="obrigatório" required />
+        </div>
+      </Section>
+
+      <div className="h-8" />
+    </div>
+  );
+}
+
+// ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
+export default function CriarPerfil() {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [showAgeModal, setShowAgeModal] = useState(false);
+
+  const [f, setF] = useState<OnboardingData>({
+    tipo: null, atletica: '', cargo: '', participacao: null,
+    nome: '', idade: '', genero: 'Homem', orientacao: 'Hétero',
+    curso: '', instituicao: '', insta: '', foto_url: '',
+    ver_homem: false, ver_mulher: true, ver_nb: false,
+    mostrar_curso: true, mostrar_orientacao: true,
+    aceitouTermos: false,
+  });
+
+  const set = (key: keyof OnboardingData, val: any) => setF(prev => ({ ...prev, [key]: val }));
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('insta').eq('id', user.id).single();
+        if (profile?.insta && isMounted) {
+          set('insta', profile.insta);
+        }
+      }
+    })();
+    return () => { isMounted = false; };
+  }, []);
+
+  const totalSteps = f.tipo === 'atletica' ? 5 : f.tipo === 'convidado' ? 4 : 5;
+
+  const canAdvance = () => {
+    if (step === 1) return !!f.tipo;
+    if (step === 2 && f.tipo === 'atletica') return !!f.atletica && !!f.cargo;
+    if (step === 2 && f.tipo === 'convidado') return !!f.participacao;
+    if (step === 3 && f.tipo === 'atletica') return !!f.participacao;
+    if (step === 3 && f.tipo === 'convidado') return !!f.nome && !!f.insta;
+    if (step === 4 && f.tipo === 'atletica') return !!f.nome && !!f.insta;
+    // step 4 convidado (termos) and step 5 atletica (termos) — always advance to see the terms
+    if (step === 4 && f.tipo === 'convidado') return true;
+    // step 5 atletica (perfil) -> last step handled by isLastStep/save, not advance
+    return false;
+  };
+
+  const advance = () => {
+    if (canAdvance()) setStep(s => s + 1);
+  };
+
+  const back = () => {
+    if (step > 1) setStep(s => s - 1);
+    else router.push('/');
+  };
+
+  const getStepContent = () => {
+    if (step === 1) return <Step1 f={f} set={set} />;
+    if (step === 2 && f.tipo === 'atletica') return <Step2Atletica f={f} set={set} />;
+    if (step === 2 && f.tipo === 'convidado') return <StepParticipacao f={f} set={set} />;
+    if (step === 3 && f.tipo === 'atletica') return <StepParticipacao f={f} set={set} />;
+    if (step === 3 && f.tipo === 'convidado') return <StepPerfil f={f} set={set} onUpload={handleUpload} uploading={uploading} fileInputRef={fileInputRef} />;
+    if (step === 4 && f.tipo === 'atletica') return <StepPerfil f={f} set={set} onUpload={handleUpload} uploading={uploading} fileInputRef={fileInputRef} />;
+    if ((step === 5 && f.tipo === 'atletica') || (step === 4 && f.tipo === 'convidado'))
+      return <StepTermos f={f} set={set} />;
+    return null;
+  };
+
+  const isLastStep = (f.tipo === 'atletica' && step === 5) || (f.tipo === 'convidado' && step === 4);
+
+  // ─── UPLOAD COM COMPRESSÃO CLIENT-SIDE ──────────────────────────
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 1600,
+        useWebWorker: true,
+        fileType: 'image/jpeg',
+      });
+
+      const formData = new FormData();
+      formData.append('file', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
+      formData.append('upload_preset', 'intermatch_fotos');
+
+      const cloudName = 'dcsiucytm';
+      const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha de conexão com o servidor de imagens.');
+      }
+
+      const data = await response.json();
+      
+      // <--- AQUI A SUA MÁGICA FOI APLICADA --->
+      const urlOtimizada = otimizarUrlCloudinary(data.secure_url); 
+
+      set('foto_url', urlOtimizada);
+
+    } catch (err: any) {
+      alert('Erro no upload: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const salvar = async () => {
+    if (!f.aceitouTermos) {
+      alert('Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar.');
+      return;
+    }
+    const idade = parseInt(f.idade);
+    if (!f.idade || isNaN(idade) || idade < 18) {
+      setShowAgeModal(true);
+      return;
+    }
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { error } = await supabase.from('profiles').upsert({
+        id: user.id,
+        nome: f.nome,
+        idade: idade,
+        genero: f.genero,
+        orientacao: f.orientacao,
+        curso: f.curso,
+        instituicao: f.instituicao,
+        insta: f.insta,
+        foto_url: f.foto_url,
+        ver_homem: f.ver_homem,
+        ver_mulher: f.ver_mulher,
+        ver_nb: f.ver_nb,
+        mostrar_curso: f.mostrar_curso,
+        mostrar_orientacao: f.mostrar_orientacao,
+        tipo_participante: f.tipo,
+        atletica: f.atletica || null,
+        cargo_atletica: f.cargo || null,
+        tipo_participacao: f.participacao,
+      });
+      if (!error) {
+        setSaved(true);
+        // Limpar cache da Catraca pra ela saber que o perfil está completo
+        // @ts-ignore - Catraca usa módulo global, acessível via import
+        try { window.dispatchEvent(new CustomEvent('profile-created')); } catch {}
+        setTimeout(() => router.push('/triagem'), 800);
+      }
+    }
+    setLoading(false);
+  };
+
+  const completion = calcCompletion(f);
+  const showPreview = isLastStep;
+
+  const isReadyToSave = !!f.nome && !!f.insta;
+
+  return (
+    <>
+      <style>{`
+        @keyframes fadein { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadein { animation: fadein 0.4s cubic-bezier(0.4,0,0.2,1) both; }
+      `}</style>
+
+      <div className="fixed inset-0 bg-[#0f051a] -z-20 pointer-events-none" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
+
+      <div className="h-[100dvh] w-full overflow-y-auto relative scroll-smooth selection:bg-orange-500/30">
+
+        {/* Header */}
+        <div className="sticky top-0 z-30 flex items-center justify-between px-6 py-5 border-b border-white/5"
+          style={{ background: 'rgba(15, 5, 26, 0.85)', backdropFilter: 'blur(20px)' }}>
+          <div className="w-full max-w-6xl mx-auto flex items-center justify-between">
+            <button onClick={back} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors">
+              <ArrowLeft size={18} />
+            </button>
+            <StepBar step={step} total={f.tipo === 'atletica' ? 5 : 4} />
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500 italic w-[40px] text-right">
+              {step}/{f.tipo === 'atletica' ? 5 : f.tipo === 'convidado' ? 4 : '?'}
+            </span>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row min-h-[calc(100dvh-73px)]">
+
+          {/* Preview (só no último step) */}
+          {showPreview && (
+            <aside className="md:sticky md:top-[73px] md:h-[calc(100vh-73px)] w-full md:w-[380px] flex flex-col items-center justify-center py-12 px-6 border-b border-white/5 md:border-b-0 md:border-r border-white/5 bg-white/[0.01]">
+              <LiveCard f={f} completion={completion} />
+            </aside>
+          )}
+
+          {/* Form */}
+          <div className={`flex-1 w-full px-6 md:px-16 py-12 ${showPreview ? 'max-w-2xl' : 'max-w-lg'} mx-auto flex flex-col justify-between`}>
+            <div key={step}>
+              {getStepContent()}
+            </div>
+
+            {/* Botão de avançar/confirmar */}
+            <div className="mt-10 pb-10">
+              {isLastStep ? (
+                <button onClick={salvar} disabled={loading || saved || !isReadyToSave}
+                  className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-2xl ${saved ? 'bg-green-500 text-white' : !isReadyToSave ? 'bg-white/5 border border-white/10 text-white/20 cursor-not-allowed' : 'bg-orange-500 text-white shadow-orange-500/20 hover:bg-orange-400'}`}>
+                  {saved ? '✓ Perfil Criado!' : loading ? 'Salvando...' : 'Criar Perfil →'}
+                </button>
+              ) : (
+                <button onClick={advance} disabled={!canAdvance()}
+                  className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-3 ${canAdvance() ? 'bg-orange-500 text-white hover:bg-orange-400 shadow-2xl shadow-orange-500/20' : 'bg-white/5 border border-white/10 text-white/25 cursor-not-allowed'}`}
+                  style={{ backdropFilter: 'blur(12px)' }}>
+                  Continuar <ArrowRight size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* MODAL IDADE */}
+      {showAgeModal && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/90">
+          <div className="absolute inset-0" onClick={() => setShowAgeModal(false)} />
+          <div className="relative w-full max-w-sm bg-[#0f051a] backdrop-blur-xl rounded-[2.5rem] shadow-[0_0_50px_rgba(239,68,68,0.15)] p-8 flex flex-col items-center text-center border border-red-500/20 animate-in zoom-in-95 duration-200">
+            <div className="bg-red-500/20 text-red-500 p-4 rounded-full mb-5 ring-4 ring-red-500/10">
+              <AlertTriangle size={32} />
+            </div>
+            <h3 className="text-2xl font-black italic text-white mb-2 leading-tight uppercase">Atenção!</h3>
+            <p className="text-white/40 text-[11px] uppercase tracking-widest font-bold mb-8 leading-relaxed">
+              O Inter-Match é exclusivo para maiores de 18 anos. Você precisa ter 18 anos ou mais para criar uma conta.
+            </p>
+            <div className="flex flex-col gap-3 w-full">
+              <button onClick={() => setShowAgeModal(false)} className="w-full h-14 bg-white/0 font-black uppercase tracking-widest text-[11px] rounded-2xl flex items-center justify-center hover:bg-white/10 active:scale-95 transition-all border border-red-500/20 text-red-500">
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+</file>
+
+<file path="app/layout.tsx">
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import Navbar from "./components/Navbar";
+import Catraca from "./components/Catraca";
+import Background from "./components/Background";
+import { ToastProvider } from "./components/Toast"; 
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Inter Match",
+  description: "Match da InterCE",
+};
+
+// ✅ Viewport separado do metadata (padrão Next.js 14+)
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1, // impede zoom automático no iOS
+  userScalable: false,
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html
+      lang="pt-br"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable}`}
+    >
+      <body className="min-h-screen antialiased flex flex-col relative bg-transparent">
+        <ToastProvider>
+          <Catraca>
+            <Background />
+            <main className="flex-1 w-full relative z-10 bg-transparent">
+              {children}
+            </main>
+            <Navbar />
+          </Catraca>
+        </ToastProvider>
+      </body>
+    </html>
+  );
+}
+</file>
+
+<file path="app/perfil/page.tsx">
+'use client';
+
+import { useEffect, useState } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useRouter } from 'next/navigation';
+import { LogOut, Edit3, Trash2, AtSign, AlertTriangle } from 'lucide-react';
+import CachedImage from '../components/CachedImage';
+
+export default function PreviewPerfil() {
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    let isMounted = true;
+    const getProfile = async () => {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+          if (isMounted) router.push('/');
+          return;
+        }
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (isMounted) setProfile(data);
+      } catch (err: any) {
+        if (!err.message?.includes('stole it')) console.error(err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    getProfile();
+    return () => { isMounted = false; };
+  }, [router]);
+
+  const handleSair = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('profiles').delete().eq('id', user.id);
+        await supabase.auth.signOut();
+        setShowDeleteModal(false);
+        router.push('/');
+      }
+    } catch (erro) {
+      console.error(erro);
+      alert("Erro ao excluir conta.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (loading) return (
+    <div className="h-screen w-full flex items-center justify-center font-black italic text-orange-500 uppercase tracking-widest text-sm" style={{ background: '#0f051a' }}>
+      Sincronizando Perfil...
+    </div>
+  );
+
+  if (!profile) return null;
+
+  // Altura da navbar + safe area
+  const navbarHeight = 'calc(64px + max(1.5rem, env(safe-area-inset-bottom)))';
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-[#0f051a] -z-20 pointer-events-none" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
+
+      {/* MOBILE: ocupa exato o espaço disponível acima da navbar, sem scroll */}
+      {/* DESKTOP: centralizado normalmente */}
+      <main
+        className="relative w-full px-6 md:min-h-[100dvh] md:flex md:items-center md:justify-center md:py-10"
+        style={{
+          // Mobile: altura exata da tela menos a navbar
+          height: `calc(100dvh - ${navbarHeight})`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {/* Wrapper mobile: coluna que se adapta à altura disponível */}
+        <div
+          className="flex flex-col items-center w-full max-w-[300px] animate-in fade-in zoom-in-95 duration-500 md:hidden"
+          style={{ height: '100%', gap: '3%', paddingTop: '4%', paddingBottom: '4%' }}
+        >
+          {/* CARD — ocupa o espaço restante após os botões */}
+          <div
+            className="relative w-full rounded-[2rem] overflow-hidden border-4 border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-zinc-900 group"
+            style={{ flex: '1 1 0', minHeight: 0 }}
+          >
+            {profile.foto_url ? (
+              <CachedImage src={profile.foto_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Sua foto" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-white/10 gap-3 bg-zinc-900">
+                <div className="text-6xl">👤</div>
+                <span className="text-[10px] font-black uppercase tracking-widest">Sem Imagem</span>
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0f051a] via-[#0f051a]/40 to-transparent opacity-90 pointer-events-none" />
+            <div className="absolute bottom-5 left-5 right-5 flex flex-col gap-1">
+              <h2 className="text-2xl font-black italic text-white leading-none truncate drop-shadow-lg uppercase">
+                {profile.nome || 'Anônimo'}, {profile.idade || '?'}
+              </h2>
+              {profile.mostrar_curso && (profile.curso || profile.instituicao) && (
+                <p className="text-orange-400 text-[10px] font-black uppercase tracking-[0.2em] truncate leading-tight">
+                  {[profile.curso, profile.instituicao].filter(Boolean).join(' · ')}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {profile.genero && (
+                  <span className="bg-white/5  border border-white/10 text-white/70 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
+                    {profile.genero}
+                  </span>
+                )}
+                {profile.mostrar_orientacao && profile.orientacao && (
+                  <span className="bg-orange-500/20  border border-orange-500/20 text-orange-400 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
+                    {profile.orientacao}
+                  </span>
+                )}
+              </div>
+              {profile.insta && (
+                <div className="flex items-center gap-1.5 mt-3 text-white/60 font-bold text-xs bg-black/40 w-fit px-3 py-1.5 rounded-full border border-white/5 ">
+                  <AtSign size={11} className="text-orange-500" />
+                  <span className="tracking-wide">@{profile.insta.replace('@', '')}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* BOTÕES — altura fixa, não encolhem */}
+          <div className="w-full flex flex-col gap-2 shrink-0">
+            <button
+              onClick={() => router.push('/perfil/editar')}
+              className="w-full h-12 rounded-2xl font-black flex items-center justify-center gap-3 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-orange-500 text-white shadow-lg shadow-orange-500/20 hover:bg-orange-400 border border-orange-400/50"
+            >
+              <Edit3 size={16} strokeWidth={2.5} /> Editar Perfil
+            </button>
+            <div className="flex gap-2 w-full">
+              <button
+                onClick={handleSair}
+                className="flex-1 h-12 rounded-2xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-[#1a0f30]/40  text-white/50 hover:text-white hover:bg-[#1a0f30]/60 border border-white/5"
+              >
+                <LogOut size={15} strokeWidth={2.5} /> Sair
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="flex-1 h-12 rounded-2xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-red-500/10  text-red-500 hover:bg-red-500/20 border border-red-500/20"
+              >
+                <Trash2 size={15} strokeWidth={2.5} /> Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* DESKTOP: layout lado a lado, tamanho fixo */}
+        <div className="hidden md:flex md:flex-row md:items-center md:justify-center md:gap-16 md:max-w-4xl w-full animate-in fade-in zoom-in-95 duration-500">
+          <div className="relative w-[340px] aspect-[3/4] rounded-[2.5rem] overflow-hidden border-4 border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-zinc-900 shrink-0 group">
+            {profile.foto_url ? (
+              <CachedImage src={profile.foto_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Sua foto" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-white/10 gap-3 bg-zinc-900">
+                <div className="text-6xl">👤</div>
+                <span className="text-[10px] font-black uppercase tracking-widest">Sem Imagem</span>
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0f051a] via-[#0f051a]/40 to-transparent opacity-90 pointer-events-none" />
+            <div className="absolute bottom-6 left-6 right-6 flex flex-col gap-1">
+              <h2 className="text-3xl font-black italic text-white leading-none truncate drop-shadow-lg uppercase">
+                {profile.nome || 'Anônimo'}, {profile.idade || '?'}
+              </h2>
+              {profile.mostrar_curso && (profile.curso || profile.instituicao) && (
+                <p className="text-orange-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2 truncate leading-tight">
+                  {[profile.curso, profile.instituicao].filter(Boolean).join(' · ')}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2 mt-1">
+                {profile.genero && (
+                  <span className="bg-white/5  border border-white/10 text-white/70 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
+                    {profile.genero}
+                  </span>
+                )}
+                {profile.mostrar_orientacao && profile.orientacao && (
+                  <span className="bg-orange-500/20  border border-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
+                    {profile.orientacao}
+                  </span>
+                )}
+              </div>
+              {profile.insta && (
+                <div className="flex items-center gap-1.5 mt-4 text-white/60 font-bold text-xs bg-black/40 w-fit px-4 py-2 rounded-full border border-white/5 ">
+                  <AtSign size={12} className="text-orange-500" />
+                  <span className="tracking-wide">@{profile.insta.replace('@', '')}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="w-[320px] flex flex-col gap-3 shrink-0">
+            <button
+              onClick={() => router.push('/perfil/editar')}
+              className="w-full h-14 rounded-2xl font-black flex items-center justify-center gap-3 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-orange-500 text-white shadow-lg shadow-orange-500/20 hover:bg-orange-400 border border-orange-400/50"
+            >
+              <Edit3 size={18} strokeWidth={2.5} /> Editar Perfil
+            </button>
+            <div className="w-full h-px bg-white/5" />
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={handleSair}
+                className="flex-1 h-14 rounded-2xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-[#1a0f30]/40  text-white/50 hover:text-white hover:bg-[#1a0f30]/60 border border-white/5 shadow-inner"
+              >
+                <LogOut size={16} strokeWidth={2.5} /> Sair
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="flex-1 h-14 rounded-2xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-[11px] uppercase tracking-[0.15em] bg-red-500/10  text-red-500 hover:bg-red-500/20 border border-red-500/20"
+              >
+                <Trash2 size={16} strokeWidth={2.5} /> Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* MODAL */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/90 ">
+          <div className="absolute inset-0" onClick={() => !deleting && setShowDeleteModal(false)} />
+          <div className="relative w-full max-w-sm bg-[#0f051a] backdrop-blur-xl rounded-[2.5rem] shadow-[0_0_50px_rgba(239,68,68,0.15)] p-8 flex flex-col items-center text-center border border-red-500/20 animate-in zoom-in-95 duration-200">
+            <div className="bg-red-500/20 text-red-500 p-4 rounded-full mb-5 ring-4 ring-red-500/10">
+              <AlertTriangle size={32} />
+            </div>
+            <h3 className="text-2xl font-black italic text-white mb-2 leading-tight uppercase">Alerta Vermelho!</h3>
+            <p className="text-white/40 text-[11px] uppercase tracking-widest font-bold mb-8 leading-relaxed">
+              Seu perfil será deletado e todos os matches perdidos. Tem certeza?
+            </p>
+            <div className="flex flex-col gap-3 w-full">
+              <button onClick={handleConfirmDelete} disabled={deleting} className="w-full h-14 bg-red-600 text-white font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-red-500 disabled:opacity-50 flex items-center justify-center active:scale-95 transition-all shadow-lg shadow-red-600/20">
+                {deleting ? 'Destruindo...' : 'Sim, Apagar Tudo'}
+              </button>
+              <button onClick={() => setShowDeleteModal(false)} disabled={deleting} className="w-full h-14 bg-white/5  text-white/30 hover:text-white font-black uppercase tracking-widest text-[11px] rounded-2xl flex items-center justify-center hover:bg-white/10 active:scale-95 transition-all border border-white/10">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+</file>
+
+<file path="app/matches/page.tsx">
+'use client';
+
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { AtSign, Heart, ChevronRight, X, User, RotateCcw, ArrowLeft } from 'lucide-react';
+import { createCache } from '../../lib/cache';
+import CachedImage from '../components/CachedImage';
+import { useToast } from '../components/Toast';
+
+type MatchProfile = {
+  id: string;
+  nome: string;
+  idade: number;
+  genero: string;
+  curso: string;
+  instituicao: string;
+  insta: string;
+  foto_url: string;
+  atletica: string;
+  cargo_atletica: string;
+  tipo_participacao: string;
+  mostrar_curso: boolean;
+};
+
+const matchesCache = createCache<MatchProfile[]>('matches', 120_000);
+
+export const dynamic = 'force-dynamic';
+
+function MatchesContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+  const [matches, setMatches] = useState<MatchProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMatch, setSelectedMatch] = useState<MatchProfile | null>(null);
+  const [flipped, setFlipped] = useState(false);
+  const matchesLiberados = true;
+  const userIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    let montado = true;
+    const carregarMatches = async () => {
+      try {
+        const cached = matchesCache.get();
+        if (cached) {
+          if (montado) { setMatches(cached); setLoading(false); return; }
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
+        if (!user) return;
+        userIdRef.current = user.id;
+
+        const { data: matchesMutuos, error } = await supabase
+          .rpc('get_matches_mutuos', { p_user_id: user.id });
+
+        if (error) {
+          console.error('Erro matches RPC:', error);
+        } else if (matchesMutuos && montado) {
+          const typed = matchesMutuos as MatchProfile[];
+          matchesCache.set(typed);
+          setMatches(typed);
+        }
+      } catch (error) {
+        console.error('Erro na busca:', error);
+      } finally {
+        if (montado) setLoading(false);
+      }
+    };
+
+    carregarMatches();
+    return () => { montado = false; };
+  }, []);
+
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      toast('Perfil pronto pro rolê!');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // ─── 💉 MÁGICA APLICADA AQUI: Supabase Realtime Otimizado ───
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel>;
+
+    const setupRealtime = async () => {
+      // 1. Precisamos da sessão para pegar o ID do usuário
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      // 2. Cria a escuta apenas para novos likes (INSERT) direcionados a ele (receiver_id)
+      channel = supabase
+        .channel('match-list')
+        .on(
+          'postgres_changes',
+          { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'likes',
+            filter: `receiver_id=eq.${session.user.id}` // 👈 SALVAÇÃO DE QUOTA
+          },
+          () => {
+            matchesCache.invalidate();
+            supabase.rpc('get_matches_mutuos', { p_user_id: session.user.id }).then(({ data }) => {
+              if (data) setMatches(data as MatchProfile[]);
+            });
+          }
+        )
+        .subscribe();
+    };
+
+    setupRealtime();
+
+    return () => { 
+      if (channel) supabase.removeChannel(channel); 
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedMatch) setFlipped(false);
+  }, [selectedMatch]);
+
+  const refreshMatches = async () => {
+    matchesCache.invalidate();
+    if (!userIdRef.current) return;
+    const { data: matchesMutuos } = await supabase
+      .rpc('get_matches_mutuos', { p_user_id: userIdRef.current });
+    if (matchesMutuos) {
+      const typed = matchesMutuos as MatchProfile[];
+      matchesCache.set(typed);
+      setMatches(typed);
+    }
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-[#0f051a] -z-20 pointer-events-none" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
+
+      <main className="min-h-[100dvh] bg-transparent pb-40 flex flex-col items-center px-6 relative z-10 overflow-x-hidden">
+
+        {/* HEADER */}
+        <div className="w-full max-w-sm pt-10 pb-6 flex flex-col items-center text-center">
+          <h1 className="text-2xl font-black text-white flex items-center gap-2 drop-shadow-lg italic uppercase tracking-tight">
+            Seus Matches <Heart size={22} className="text-orange-500" fill="currentColor"/>
+          </h1>
+          <p className="text-orange-500 text-[9px] font-black mt-1 uppercase tracking-[0.2em] opacity-80">
+            Conexões confirmadas
+          </p>
+        </div>
+
+        {loading ? (
+          <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="w-8 h-8 border-4 border-white/10 border-t-orange-500 rounded-full animate-spin" />
+          </div>
+        ) : matches.length > 0 ? (
+          <div className="w-full max-w-sm flex flex-col gap-3">
+            {matches.map((match) => (
+              <div
+                key={match.id}
+                onClick={() => setSelectedMatch(match)}
+                className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.08]  p-3 rounded-[1.5rem] shadow-lg border border-white/5 active:scale-[0.98] transition-all group cursor-pointer"
+              >
+                <div className="relative w-14 h-14 shrink-0 rounded-2xl overflow-hidden border border-white/10 group-hover:border-orange-500/50 transition-colors bg-zinc-900">
+                  {match.foto_url ? (
+                    <CachedImage src={match.foto_url} alt={match.nome} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white/10"><User size={20} /></div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-black text-white text-base leading-tight uppercase italic truncate">{match.nome}, {match.idade}</h3>
+                  <p className="text-white/40 text-[9px] font-black uppercase truncate tracking-wider mt-0.5">
+                    {match.atletica || 'Convidado'}
+                  </p>
+                </div>
+                <ChevronRight className="text-white/10 group-hover:text-orange-500 transition-colors" size={20} />
+              </div>
+            ))}
+            <div className="h-10 w-full pointer-events-none" />
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-10">
+            <div className="bg-white/5  p-8 rounded-[2rem] border border-dashed border-white/10 text-center">
+              <p className="text-white/20 font-black uppercase text-[10px] tracking-[0.2em] leading-relaxed">
+                Nenhum match detectado... <br/>
+                <span className="text-orange-500/50">volte para a triagem! 🚑</span>
+              </p>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* ── MODAL DE PREVIEW ── */}
+      {selectedMatch && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/95  animate-in fade-in duration-300">
+          <div className="absolute inset-0" onClick={() => setSelectedMatch(null)} />
+
+          <div
+            className="relative w-full max-w-sm cursor-pointer"
+            style={{ perspective: '1200px' }}
+            onClick={() => setFlipped(!flipped)}
+          >
+            <div
+              style={{
+                transformStyle: 'preserve-3d',
+                transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                position: 'relative',
+              }}
+            >
+              {/* ── FRENTE DO CARD ── */}
+              <div
+                className="w-full aspect-[4/5] bg-[#1a1a1a] rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden border border-white/10 relative flex flex-col"
+                style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+              >
+                <div className="absolute inset-0 z-0">
+                  {selectedMatch.foto_url ? (
+                    <CachedImage src={selectedMatch.foto_url} alt={selectedMatch.nome} className="w-full h-full object-cover absolute inset-0" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-[#1a1a1a] text-white/5"><User size={80} /></div>
+                  )}
+                </div>
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent z-10 pointer-events-none" />
+
+                <div className="absolute top-5 left-5 z-30 bg-black/80  border border-white/20 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-2xl transition-all">
+                  <RotateCcw size={10} className="text-orange-500" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-white">Ver mais</span>
+                </div>
+
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedMatch(null); }}
+                  className="absolute top-5 right-5 z-30 w-10 h-10 rounded-full bg-black/40  border border-white/10 flex items-center justify-center text-white hover:bg-red-500 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+
+                <div className="absolute bottom-0 left-0 right-0 z-20 p-6 flex flex-col gap-4">
+                  <div className="flex flex-col gap-0.5">
+                    <h2 className="text-2xl font-black italic text-white uppercase tracking-tight drop-shadow-md">
+                      {selectedMatch.nome}, {selectedMatch.idade}
+                    </h2>
+                    <p className="text-orange-500 font-black text-[10px] uppercase tracking-widest drop-shadow-sm">
+                      {selectedMatch.atletica || 'Convidado'}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      <span className="px-2.5 py-0.5 bg-white/10  rounded-full text-[8px] font-black uppercase text-white/80 border border-white/10">
+                        {selectedMatch.genero}
+                      </span>
+                    </div>
+                  </div>
+
+                  {selectedMatch.insta && (
+                    <a
+                      href={`https://instagram.com/${selectedMatch.insta.replace('@', '')}`}
+                      target="_blank"
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full h-12 bg-white text-black rounded-xl flex items-center justify-center gap-2 font-black uppercase text-[10px] tracking-widest hover:bg-orange-500 hover:text-white transition-all active:scale-95 shadow-lg"
+                    >
+                      <AtSign size={16} /> Chamar no Insta
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* ── VERSO DO CARD ── */}
+              <div
+                className="absolute inset-0 w-full aspect-[4/5] bg-[#0f051a]  rounded-[2.5rem] shadow-2xl border border-white/10 flex flex-col overflow-hidden"
+                style={{
+                  backfaceVisibility: 'hidden',
+                  WebkitBackfaceVisibility: 'hidden',
+                  transform: 'rotateY(180deg)',
+                }}
+              >
+                <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-white/5">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-zinc-900">
+                    {selectedMatch.foto_url
+                      ? <CachedImage src={selectedMatch.foto_url} alt={selectedMatch.nome} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center text-white/10"><User size={20} /></div>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-white font-black italic uppercase text-lg leading-none truncate">{selectedMatch.nome}, {selectedMatch.idade}</h3>
+                    <p className="text-orange-500 text-[8px] font-black uppercase tracking-[0.2em] mt-1">Ficha do Participante</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={(e) => { e.stopPropagation(); setFlipped(false); }}
+                  className="absolute top-5 right-5 z-30 w-10 h-10 rounded-full bg-black/80  border border-white/10 flex items-center justify-center text-orange-500 hover:bg-orange-500 hover:text-white transition-colors shadow-2xl"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+
+                <div className="flex-1 px-6 py-5 flex flex-col gap-5 overflow-y-auto custom-scrollbar relative z-10">
+                  <div>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-white/20 mb-1.5">Acadêmico</p>
+                    <p className="text-white font-bold text-xs uppercase tracking-wide">
+                      {selectedMatch.curso} <span className="text-orange-500 mx-0.5">/</span> {selectedMatch.instituicao}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-white/20 mb-1.5">Atlética</p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="bg-orange-500/10 border border-orange-500/20 text-orange-400 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                        ⚔️ {selectedMatch.atletica || 'Convidado'}
+                      </span>
+                      {selectedMatch.cargo_atletica && (
+                        <span className="bg-white/5 border border-white/10 text-white/40 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                          {selectedMatch.cargo_atletica}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-white/20 mb-1.5">Participação</p>
+                    <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${selectedMatch.tipo_participacao === 'completo' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'}`}>
+                      {selectedMatch.tipo_participacao === 'completo' ? '🎉 Evento Completo' : '🎊 Só a Festa'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+export default function Matches() {
+  return (
+    <Suspense fallback={<div className="h-screen w-full bg-[#0f051a]" />}>
+      <MatchesContent />
+    </Suspense>
+  );
+}
+</file>
+
+<file path="app/page.tsx">
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Flame, ChevronLeft, Eye, EyeOff } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { useToast } from './components/Toast';
+
+interface LoginContentProps {
+  showLogin: boolean;
+  setShowLogin: (v: boolean) => void;
+  email: string;
+  setEmail: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  loading: boolean;
+  handleLogin: (e: React.FormEvent) => void;
+}
+
+// Componente isolado com o conteúdo de Login
+function LoginContent({
+  showLogin,
+  setShowLogin,
+  email,
+  setEmail,
+  password,
+  setPassword,
+  loading,
+  handleLogin,
+}: LoginContentProps) {
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+
+  return (
+    <>
+      {/* LOGO SUPERIOR (ÍCONE) */}
+      <div className="mb-10 flex flex-col items-center text-center">
+        <div className="bg-orange-500 p-5 rounded-[2rem] shadow-[0_10px_30px_rgba(234,88,12,0.3)] mb-5 transition-transform duration-500 hover:rotate-12">
+          <Flame size={48} color="white" fill="white" />
+        </div>
+        <h1 className="text-4xl font-black text-white italic uppercase tracking-tighter drop-shadow-lg">
+          INTER <span className="text-orange-500">MATCH</span>
+        </h1>
+        <p className="text-white/30 text-[10px] font-black uppercase tracking-[0.3em] mt-2">
+          Sintonize com novas conexões
+        </p>
+      </div>
+
+      <div className="w-full max-w-xs transition-all duration-300">
+        {!showLogin ? (
+          <div className="flex flex-col gap-4 animate-in fade-in zoom-in duration-500">
+            <button
+              onClick={() => setShowLogin(true)}
+              className="w-full bg-orange-500 text-white font-black italic uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-orange-500/20 hover:bg-orange-400 active:scale-95 transition-all text-sm"
+            >
+              Fazer Login
+            </button>
+            <Link
+              href="/ingressar"
+              className="w-full bg-white/5 backdrop-blur-md text-white/70 border border-white/10 font-black italic uppercase tracking-widest py-4 rounded-2xl hover:bg-white/10 hover:text-white transition-all text-sm text-center shadow-lg"
+            >
+              Criar Conta
+            </Link>
+          </div>
+        ) : (
+          <form onSubmit={handleLogin} className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-2xl border border-white/10 flex flex-col gap-5 animate-in slide-in-from-bottom-4 duration-300">
+            <button
+              type="button"
+              onClick={() => setShowLogin(false)}
+              className="flex items-center gap-1 text-white/30 text-[10px] font-black uppercase tracking-widest hover:text-orange-500 transition-colors"
+            >
+              <ChevronLeft size={16} /> Voltar
+            </button>
+            
+            <div className="text-left mb-2">
+              <h2 className="text-xl font-black italic text-white uppercase leading-tight">Bem-vindo!</h2>
+              <p className="text-white/30 text-[9px] font-bold uppercase tracking-widest mt-1">Insira suas credenciais</p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <input
+                type="email"
+                placeholder="E-MAIL"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-5 py-4 bg-black/20 border border-white/10 rounded-2xl focus:border-orange-500 focus:outline-none text-white font-bold text-xs placeholder:text-white/20 transition-all shadow-inner"
+              />
+              
+              <div className="relative">
+                <input
+                  type={mostrarSenha ? 'text' : 'password'}
+                  placeholder="SENHA"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full px-5 py-4 pr-12 bg-black/20 border border-white/10 rounded-2xl focus:border-orange-500 focus:outline-none text-white font-bold text-xs placeholder:text-white/20 transition-all shadow-inner"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha(prev => !prev)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-orange-500 transition-colors"
+                >
+                  {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-orange-500 text-white font-black italic uppercase tracking-widest py-4 rounded-2xl hover:bg-orange-400 transition-all shadow-lg shadow-orange-500/20 active:scale-95 disabled:opacity-50 text-sm mt-2"
+            >
+              {loading ? 'Acessando...' : 'Entrar'}
+            </button>
+          </form>
+        )}
+      </div>
+
+      <footer className="mt-16 flex flex-col items-center gap-4 opacity-60 hover:opacity-100 transition-opacity">
+        <img 
+          src="/NOME.png" 
+          alt="VI INTERCE" 
+          className="w-32 h-auto object-contain drop-shadow-md" 
+        />
+      </footer>
+    </>
+  );
+}
+
+// Página Principal
+export default function Home() {
+  const [showLogin, setShowLogin] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      toast('E-mail ou senha inválidos', 'error');
+    } else if (data.user) {
+      const { data: profile } = await supabase.from('profiles').select('id').eq('id', data.user.id).single();
+      // 💉 CIRURGIA FEITA AQUI:
+      router.push(profile ? '/triagem' : '/perfil/criar');
+    }
+    setLoading(false);
+  };
+
+  const props = { showLogin, setShowLogin, email, setEmail, password, setPassword, loading, handleLogin };
+
+  return (
+    <div className="bg-[#0f051a] min-h-screen relative text-white">
+      {/* 💉 FUNDO GLOBAL OTIMIZADO */}
+      <div className="fixed inset-0 bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] z-0 pointer-events-none" style={{ transform: 'translateZ(0)' }} />
+
+      {/* 📱 MOBILE (Conteúdo centralizado normal) */}
+      <main className="flex md:hidden min-h-screen flex-col items-center justify-center p-6 text-center relative z-10">
+        <LoginContent {...props} />
+      </main>
+
+      {/* 💻 DESKTOP (Com a Logo Centralizada no Background) */}
+      <div className="hidden md:flex min-h-screen relative z-10">
+        
+        {/* 💉 LADO ESQUERDO: Ocupa o espaço do fundo e centraliza o LOGO.png */}
+        <div className="flex-1 flex flex-col items-center justify-center p-20 animate-in fade-in zoom-in duration-1000">
+           <img 
+            src="/LOGO.png" 
+            alt="Logo Match Med" 
+            className="max-w-md lg:max-w-lg h-auto object-contain drop-shadow-[0_0_50px_rgba(234,88,12,0.2)]" 
+           />
+        </div>
+
+        {/* BARRA LATERAL COM O LOGIN (Liquid Glass) */}
+        <aside className="w-[450px] min-h-screen bg-white/[0.02] backdrop-blur-2xl border-l border-white/5 shadow-2xl flex flex-col items-center justify-center p-12 relative">
+          <LoginContent {...props} />
+        </aside>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="app/perfil/editar/page.tsx">
+'use client';
+
+import { useEffect, useState, useRef, memo } from 'react';
+import { supabase } from '../../../lib/supabase';
+import { useRouter } from 'next/navigation';
+import { Camera, ArrowLeft, Loader2, AtSign, ChevronDown } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
+
+// Importe o helper no topo do arquivo
+import { otimizarUrlCloudinary } from '../../../lib/cloudinary';
+
+// ─── DADOS DAS ATLÉTICAS (igual ao onboarding) ────────────────────────────────
+const ATLETICAS = {
+  '1ª Divisão': [
+    { nome: 'Alcateia',     curso: 'Medicina', instituicao: 'UFC Sobral' },
+    { nome: 'Audácia',      curso: 'Medicina', instituicao: 'Unichristus' },
+    { nome: 'Espartana',    curso: 'Medicina', instituicao: 'IDOMED Juazeiro' },
+    { nome: 'Fulminante',   curso: 'Medicina', instituicao: 'UECE' },
+    { nome: 'Ira',          curso: 'Medicina', instituicao: 'UNINTA Sobral' },
+    { nome: 'Kariris',      curso: 'Medicina', instituicao: 'UFCA Barbalha' },
+    { nome: 'Selvagem',     curso: 'Medicina', instituicao: 'UFC Fortaleza' },
+    { nome: 'Tenebrosa',    curso: 'Medicina', instituicao: 'UNIFOR' },
+  ],
+  '2ª Divisão': [
+    { nome: 'Invocada',     curso: 'Medicina', instituicao: 'IDOMED Quixadá' },
+    { nome: 'Caçadora',     curso: 'Medicina', instituicao: 'UECE Crateús' },
+    { nome: 'Perversa',     curso: 'Medicina', instituicao: 'UNINTA Itapipoca' },
+    { nome: 'Aniquiladora', curso: 'Medicina', instituicao: 'IDOMED Iguatu' },
+  ],
+  'Convidadas': [
+    { nome: 'Voraz',         curso: 'Medicina', instituicao: 'F5  Sobral' },
+    { nome: 'Tirana',        curso: 'Medicina', instituicao: 'UECE Quixeramobim' },
+    { nome: 'Exterminadora', curso: 'Medicina', instituicao: 'URCA Cariri' },
+  ],
+} as const;
+
+const TODAS_ATLETICAS = Object.values(ATLETICAS).flat();
+
+const CARGOS = [
+  'Presidente',
+  'Diretor',
+  'Organizador',
+  'Técnico',
+  'Esportista / Jogador',
+  'Egresso',
+  'Acadêmico',
+];
+
+// ─── TIPOS ────────────────────────────────────────────────────────────────────
+type FormData = {
+  nome: string;
+  idade: string;
+  genero: string;
+  orientacao: string;
+  curso: string;
+  instituicao: string;
+  insta: string;
+  foto_url: string;
+  ver_homem: boolean;
+  ver_mulher: boolean;
+  ver_nb: boolean;
+  mostrar_curso: boolean;
+  mostrar_orientacao: boolean;
+  // Novas colunas
+  tipo_participante: 'atletica' | 'convidado' | string;
+  atletica: string;
+  cargo_atletica: string;
+  tipo_participacao: 'festa' | 'completo' | string;
+};
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+const calcCompletion = (f: FormData) => {
+  const fields = [f.nome, f.idade, f.foto_url, f.insta];
+  return Math.round((fields.filter(Boolean).length / fields.length) * 100);
+};
+
+// ─── SUB-COMPONENTES ──────────────────────────────────────────────────────────
+function CompletionRing({ pct }: { pct: number }) {
+  const r = 54;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  return (
+    <svg viewBox="0 0 120 120" className="absolute inset-0 w-full h-full pointer-events-none" style={{ transform: 'rotate(-90deg)' }}>
+      <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="2" />
+      <circle cx="60" cy="60" r={r} fill="none" stroke="#f97316" strokeWidth="3" strokeLinecap="round"
+        strokeDasharray={`${dash} ${circ}`} style={{ transition: 'stroke-dasharray 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
+    </svg>
+  );
+}
+
+function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-center justify-between cursor-pointer group bg-white/[0.02] hover:bg-white/[0.05] px-4 py-3 rounded-xl border border-white/5 transition-all mt-2">
+      <span className="text-[10px] font-black uppercase tracking-widest text-white/30 group-hover:text-orange-400 transition-colors">{label}</span>
+      <div className={`relative w-10 h-6 rounded-full transition-colors ${checked ? 'bg-orange-500' : 'bg-black/50 border border-white/10'}`}>
+        <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
+      </div>
+      <input type="checkbox" className="sr-only" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    </label>
+  );
+}
+
+const LiveCard = memo(function LiveCard({ f, completion }: { f: FormData; completion: number }) {
+  return (
+    <div className="w-full flex flex-col items-center gap-6">
+      <div className="relative w-[160px] h-[160px] shrink-0">
+        <CompletionRing pct={completion} />
+        <div className="absolute inset-[12px] rounded-full overflow-hidden bg-zinc-900 border border-white/10 shadow-2xl">
+          {f.foto_url ? (
+            <img src={f.foto_url} alt="foto" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-white/5"><Camera size={32} /></div>
+          )}
+        </div>
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-[9px] font-black px-3 py-1 rounded-full leading-none shadow-lg border border-orange-400 uppercase tracking-tighter">
+          {completion}% completo
+        </div>
+      </div>
+
+      <div className="text-center px-4">
+        <h2 className="text-white font-black text-2xl italic leading-none tracking-tight uppercase">
+          {f.nome || <span className="text-white/10 not-italic font-normal">Seu Nome</span>}
+          {f.nome && f.idade && <span className="text-orange-500">, {f.idade}</span>}
+        </h2>
+        {f.mostrar_curso && (f.curso || f.instituicao) && (
+          <p className="text-white/30 text-[9px] font-black mt-2 uppercase tracking-[0.2em] leading-tight">
+            {[f.curso, f.instituicao].filter(Boolean).join(' · ')}
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2 justify-center max-w-[280px]">
+        {f.genero && (
+          <span className="bg-white/5 border border-white/10 text-white/50 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">{f.genero}</span>
+        )}
+        {f.mostrar_orientacao && f.orientacao && (
+          <span className="bg-orange-500/10 border border-orange-500/20 text-orange-400/80 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">{f.orientacao}</span>
+        )}
+        {f.atletica && (
+          <span className="bg-orange-500/20 border border-orange-500/30 text-orange-300 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">⚔ {f.atletica}</span>
+        )}
+        {f.cargo_atletica && (
+          <span className="bg-white/5 border border-white/10 text-white/40 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">{f.cargo_atletica}</span>
+        )}
+        {f.insta && (
+          <span className="bg-black/40 border border-white/5 text-white/40 text-[8px] font-bold px-3 py-1.5 rounded-full lowercase flex items-center gap-1">
+            <AtSign size={10} /> {f.insta}
+          </span>
+        )}
+        {f.tipo_participacao && (
+          <span className={`text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest border ${f.tipo_participacao === 'completo' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'}`}>
+            {f.tipo_participacao === 'completo' ? '🎉 Evento Completo' : '🎊 Só a Festa'}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+});
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-12">
+      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-6 ml-1">{title}</p>
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="group">
+      <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-2 group-focus-within:text-orange-500 transition-colors ml-1">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const inputCls = 'w-full bg-black/60 hover:bg-black/70 border border-white/10 rounded-xl px-4 py-4 focus:border-orange-500/50 focus:bg-black/70 outline-none text-white font-bold text-sm transition-all placeholder:text-white/25 shadow-inner ';
+const selectCls = 'w-full bg-black/60 hover:bg-black/70 border border-white/10 rounded-xl px-4 py-4 focus:border-orange-500/50 outline-none text-white font-bold text-sm transition-all cursor-pointer appearance-none shadow-inner ';
+
+// ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
+export default function EditarPerfil() {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const [f, setF] = useState<FormData>({
+    nome: '', idade: '', genero: 'Homem', orientacao: 'Hétero',
+    curso: '', instituicao: '', insta: '', foto_url: '',
+    ver_homem: false, ver_mulher: true, ver_nb: false,
+    mostrar_curso: true, mostrar_orientacao: true,
+    tipo_participante: '', atletica: '', cargo_atletica: '', tipo_participacao: '',
+  });
+
+  const set = (key: keyof FormData, val: string | boolean) => setF(prev => ({ ...prev, [key]: val }));
+
+  const isAtletica = f.tipo_participante === 'atletica';
+
+  // Quando muda a atlética, preenche curso e instituição automaticamente
+  const handleAtletica = (nome: string) => {
+    const info = TODAS_ATLETICAS.find(a => a.nome === nome);
+    set('atletica', nome);
+    if (info) {
+      set('curso', info.curso);
+      set('instituicao', info.instituicao);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (profile && isMounted) {
+          setF({
+            nome: profile.nome || '',
+            idade: profile.idade?.toString() || '',
+            genero: profile.genero || 'Homem',
+            orientacao: profile.orientacao || 'Hétero',
+            curso: profile.curso || '',
+            instituicao: profile.instituicao || '',
+            insta: profile.insta || '',
+            foto_url: profile.foto_url || '',
+            ver_homem: profile.ver_homem ?? false,
+            ver_mulher: profile.ver_mulher ?? true,
+            ver_nb: profile.ver_nb ?? false,
+            mostrar_curso: profile.mostrar_curso ?? true,
+            mostrar_orientacao: profile.mostrar_orientacao ?? true,
+            tipo_participante: profile.tipo_participante || '',
+            atletica: profile.atletica || '',
+            cargo_atletica: profile.cargo_atletica || '',
+            tipo_participacao: profile.tipo_participacao || '',
+          });
+        }
+      } catch (err) {}
+    })();
+    return () => { isMounted = false; };
+  }, []);
+
+  // ─── UPLOAD COM COMPRESSÃO CLIENT-SIDE ──────────────────────────
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 1600,
+        useWebWorker: true,
+        fileType: 'image/jpeg',
+      });
+
+      const formData = new FormData();
+      formData.append('file', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
+      formData.append('upload_preset', 'intermatch_fotos');
+
+      const cloudName = 'dcsiucytm';
+      const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha de conexão com o servidor de imagens.');
+      }
+
+      const data = await response.json();
+
+      // <--- AQUI A MÁGICA FOI APLICADA --->
+      const urlOtimizada = otimizarUrlCloudinary(data.secure_url);
+
+      set('foto_url', urlOtimizada);
+
+    } catch (err: any) {
+      alert('Erro no upload: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const salvar = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { error } = await supabase.from('profiles').upsert({
+        id: user.id,
+        nome: f.nome,
+        idade: parseInt(f.idade) || 0,
+        genero: f.genero,
+        orientacao: f.orientacao,
+        curso: f.curso,
+        instituicao: f.instituicao,
+        insta: f.insta,
+        foto_url: f.foto_url,
+        ver_homem: f.ver_homem,
+        ver_mulher: f.ver_mulher,
+        ver_nb: f.ver_nb,
+        mostrar_curso: f.mostrar_curso,
+        mostrar_orientacao: f.mostrar_orientacao,
+        tipo_participante: f.tipo_participante || null,
+        atletica: f.atletica || null,
+        cargo_atletica: f.cargo_atletica || null,
+        tipo_participacao: f.tipo_participacao || null,
+      });
+      if (!error) {
+        setSaved(true);
+        setTimeout(() => router.push('/perfil'), 800);
+      }
+    }
+    setLoading(false);
+  };
+
+  const completion = calcCompletion(f);
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-[#0f051a] -z-20 pointer-events-none" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
+
+      <div className="h-[100dvh] w-full overflow-y-auto relative scroll-smooth selection:bg-orange-500/30">
+
+        {/* Header */}
+        <div className="sticky top-0 z-30 flex items-center justify-between px-6 py-5 border-b border-white/5"
+          style={{ background: 'rgba(15, 5, 26, 0.8)', backdropFilter: 'blur(20px)' }}>
+          <div className="w-full max-w-6xl mx-auto flex items-center justify-between">
+            <button onClick={() => router.push('/perfil')} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors">
+              <ArrowLeft size={18} />
+              <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">Voltar</span>
+            </button>
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500 italic">Editar Perfil</span>
+            <button onClick={salvar} disabled={loading || saved}
+              className={`text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-full transition-all ${saved ? 'bg-green-500 text-white' : 'bg-orange-500 text-white hover:bg-orange-400'}`}>
+              {saved ? '✓ Salvo' : loading ? 'Salvando...' : 'Confirmar'}
+            </button>
+          </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row">
+
+          {/* Live preview */}
+          <aside className="md:sticky md:top-[73px] md:h-[calc(100vh-73px)] w-full md:w-[380px] flex flex-col items-center justify-center py-12 px-6 border-b border-white/5 md:border-b-0 md:border-r border-white/5 bg-white/[0.01]">
+            <LiveCard f={f} completion={completion} />
+          </aside>
+
+          {/* Form */}
+          <div className="flex-1 w-full px-6 md:px-16 py-12 max-w-2xl mx-auto">
+
+            {/* ── Participação ── */}
+            <Section title="Participação">
+              <div className="flex flex-col gap-3">
+
+                {/* Tipo de participante */}
+                <Field label="Você é">
+                  <div className="flex gap-2">
+                    {[
+                      { key: 'atletica', label: '⚔️ Atlética' },
+                      { key: 'convidado', label: '🎟️ Convidado' },
+                    ].map(({ key, label }) => {
+                      const active = f.tipo_participante === key;
+                      return (
+                        <button key={key} onClick={() => set('tipo_participante', key)}
+                          className={`flex-1 py-3 px-4 rounded-xl border text-xs font-black uppercase tracking-wide transition-all  ${active ? 'border-orange-500/60 bg-black/60 text-orange-400' : 'border-white/10 bg-black/60 text-white/40 hover:border-white/25 hover:text-white/70'}`}>
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Field>
+
+                {/* Atlética + cargo (só se for membro) */}
+                {isAtletica && (
+                  <>
+                    <Field label="Atlética">
+                      <div className="relative">
+                        <select className={selectCls} value={f.atletica} onChange={(e) => handleAtletica(e.target.value)}>
+                          <option value="">Selecione sua atlética</option>
+                          {Object.entries(ATLETICAS).map(([divisao, lista]) => (
+                            <optgroup key={divisao} label={`── ${divisao} ──`}>
+                              {lista.map(a => <option key={a.nome} value={a.nome}>{a.nome}</option>)}
+                            </optgroup>
+                          ))}
+                        </select>
+                        <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
+                      </div>
+                    </Field>
+
+                    {f.atletica && (
+                      <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+                        <p className="text-white/50 text-xs font-bold">
+                          <span className="text-orange-400 font-black">{f.atletica}</span> · {f.curso} · {f.instituicao}
+                        </p>
+                      </div>
+                    )}
+
+                    <Field label="Cargo na Atlética">
+                      <div className="relative">
+                        <select className={selectCls} value={f.cargo_atletica} onChange={(e) => set('cargo_atletica', e.target.value)}>
+                          <option value="">Selecione seu cargo</option>
+                          {CARGOS.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
+                      </div>
+                    </Field>
+                  </>
+                )}
+
+                {/* Tipo de participação (para todos) */}
+                {f.tipo_participante && (
+                  <Field label="Participação no Evento">
+                    <div className="flex gap-2">
+                      {[
+                        { key: 'festa', label: '🎊 Só a Festa', color: 'yellow' },
+                        { key: 'completo', label: '🎉 Evento Completo', color: 'green' },
+                      ].map(({ key, label, color }) => {
+                        const active = f.tipo_participacao === key;
+                        const activeCls = color === 'yellow'
+                          ? 'border-yellow-500/60 text-yellow-400'
+                          : 'border-green-500/60 text-green-400';
+                        return (
+                          <button key={key} onClick={() => set('tipo_participacao', key)}
+                            className={`flex-1 py-3 px-4 rounded-xl border text-xs font-black uppercase tracking-wide transition-all  bg-black/60 ${active ? activeCls : 'border-white/10 text-white/40 hover:border-white/25 hover:text-white/70'}`}>
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Field>
+                )}
+              </div>
+            </Section>
+
+            {/* ── Identidade ── */}
+            <Section title="Identidade">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+                <div className="md:col-span-2">
+                  <Field label="Nome"><input className={inputCls} value={f.nome} onChange={(e) => set('nome', e.target.value)} placeholder="Seu nome" /></Field>
+                </div>
+                <Field label="Idade"><input type="number" className={inputCls} value={f.idade} onChange={(e) => set('idade', e.target.value)} placeholder="Sua idade" /></Field>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Gênero">
+                  <div className="relative">
+                    <select className={selectCls} value={f.genero} onChange={(e) => set('genero', e.target.value)}>
+                      <option value="Homem">Homem</option>
+                      <option value="Mulher">Mulher</option>
+                      <option value="Não Binário">NB</option>
+                    </select>
+                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
+                  </div>
+                </Field>
+                <div>
+                  <Field label="Orientação">
+                    <div className="relative">
+                      <select className={selectCls} value={f.orientacao} onChange={(e) => set('orientacao', e.target.value)}>
+                        <option value="Hétero">Hétero</option>
+                        <option value="Bi">Bi</option>
+                        <option value="Gay">Gay</option>
+                      </select>
+                      <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
+                    </div>
+                  </Field>
+                  <Toggle label="Mostrar no perfil" checked={f.mostrar_orientacao} onChange={(val) => set('mostrar_orientacao', val)} />
+                </div>
+              </div>
+            </Section>
+
+            {/* ── Acadêmico ── só editável para convidados; atlética é preenchido auto ── */}
+            <Section title="Acadêmico">
+              {isAtletica ? (
+                <>
+                  <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl px-4 py-3 flex items-center gap-3 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+                    <p className="text-white/40 text-xs font-bold leading-relaxed">
+                      Preenchido automaticamente pela atlética{f.atletica ? <> — <span className="text-orange-400 font-black">{f.atletica}</span></> : ''}.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-3 opacity-50 pointer-events-none">
+                    <Field label="Curso"><input className={inputCls} value={f.curso} readOnly /></Field>
+                    <Field label="Faculdade"><input className={inputCls} value={f.instituicao} readOnly /></Field>
+                  </div>
+                </>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                  <Field label="Curso"><input className={inputCls} value={f.curso} onChange={(e) => set('curso', e.target.value)} placeholder="Medicina" /></Field>
+                  <Field label="Faculdade"><input className={inputCls} value={f.instituicao} onChange={(e) => set('instituicao', e.target.value)} placeholder="UFC" /></Field>
+                </div>
+              )}
+              <Toggle label="Mostrar curso e facul" checked={f.mostrar_curso} onChange={(val) => set('mostrar_curso', val)} />
+            </Section>
+
+            {/* ── Fotografia ── */}
+            <Section title="Fotografia">
+              <input type="file" ref={fileInputRef} onChange={handleUpload} accept="image/*" className="hidden" />
+              <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                className="w-full group rounded-2xl border border-dashed border-white/10 hover:border-orange-500/40 hover:bg-white/[0.02] transition-all p-10 flex flex-col items-center gap-4">
+                {f.foto_url ? (
+                  <>
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden ring-1 ring-white/10 group-hover:ring-orange-500/50">
+                      <img src={f.foto_url} className="w-full h-full object-cover" alt="foto" />
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20 group-hover:text-orange-500">Trocar Imagem</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-all">
+                      {uploading ? <Loader2 size={20} className="text-orange-500 animate-spin" /> : <Camera size={20} className="text-white/20" />}
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Upload de Foto</span>
+                  </>
+                )}
+              </button>
+            </Section>
+
+            {/* ── Radar de Plantão ── */}
+            <Section title="Radar de Plantão">
+              <div className="flex gap-2">
+                {[
+                  { key: 'ver_homem', label: 'Homens', sym: '♂' },
+                  { key: 'ver_mulher', label: 'Mulheres', sym: '♀' },
+                  { key: 'ver_nb', label: 'NB', sym: '⚧' },
+                ].map(({ key, label, sym }) => {
+                  const active = f[key as keyof FormData] as boolean;
+                  return (
+                    <button key={key} onClick={() => set(key as keyof FormData, !active)}
+                      className={`flex-1 py-4 rounded-xl border transition-all ${active ? 'border-orange-500/50 bg-orange-500/10 text-orange-400' : 'border-white/5 bg-white/5 text-white/20'}`}>
+                      <div className="text-xl mb-1">{sym}</div>
+                      <div className="text-[8px] font-black uppercase tracking-widest">{label}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </Section>
+
+            {/* ── Instagram ── */}
+            <Section title="Instagram">
+              <div className="flex items-center gap-3 bg-black/60  border border-white/10 rounded-xl px-4 py-4 focus-within:border-orange-500/50 transition-all">
+                <AtSign size={16} className="text-white/20" />
+                <input className="bg-transparent flex-1 outline-none text-white font-bold text-sm placeholder:text-white/25"
+                  value={f.insta} onChange={(e) => set('insta', e.target.value.replace('@', ''))} placeholder="seu.insta" />
+              </div>
+            </Section>
+
+            <div className="h-32" />
+          </div>
+        </div>
+
+        {/* Floating Save Button (Mobile) */}
+        <div className="md:hidden fixed bottom-8 left-6 right-6 z-40">
+          <button onClick={salvar} disabled={loading || saved}
+            className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-2xl ${saved ? 'bg-green-500 text-white' : 'bg-orange-500 text-white shadow-orange-500/20'}`}>
+            {saved ? '✓ Perfil Atualizado' : loading ? 'Sincronizando...' : 'Confirmar Mudanças'}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+</file>
+
+<file path="app/triagem/page.tsx">
+'use client';
+
+import { useState, useEffect, Suspense, useCallback } from 'react';
+// 💉 CIRURGIA 1: Removido o import chato do 'next/image'
+import { supabase } from '../../lib/supabase';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { X, Heart, User, AtSign, RotateCcw } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
+
+function MatchesContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [showToast, setShowToast] = useState(false);
+  const [perfis, setPerfis] = useState<any[]>([]);
+  const [indiceAtual, setIndiceAtual] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const carregarPerfis = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) { router.push('/'); return; }
+      const user = session.user;
+
+      const { data: meuPerfil } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (!meuPerfil) { router.push('/perfil'); return; }
+
+      const { data: meusVotos } = await supabase.from('likes').select('receiver_id').eq('sender_id', user.id);
+      const idsVotados = meusVotos?.map(v => v.receiver_id) || [];
+
+      const { data: outrosPerfis } = await supabase.from('profiles').select('*').neq('id', user.id);
+
+      if (outrosPerfis) {
+        let perfisFiltrados = outrosPerfis.filter(p => !idsVotados.includes(p.id));
+        perfisFiltrados = perfisFiltrados.filter(p => {
+          const eu = meuPerfil;
+          const outro = p;
+          const euQueroVerOutro = (outro.genero === 'Homem' && eu.ver_homem) || (outro.genero === 'Mulher' && eu.ver_mulher) || (outro.genero === 'Não Binário' && eu.ver_nb);
+          const outroQuerMeVer = (eu.genero === 'Homem' && outro.ver_homem) || (eu.genero === 'Mulher' && outro.ver_mulher) || (eu.genero === 'Não Binário' && outro.ver_nb);
+          return euQueroVerOutro && outroQuerMeVer;
+        });
+        setPerfis(perfisFiltrados);
+      }
+    } catch (error) { console.error('Erro:', error); } finally { setLoading(false); }
+  }, [router]);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (searchParams.get('success') === 'true') {
+      setShowToast(true);
+      timeoutId = setTimeout(() => setShowToast(false), 4000);
+    }
+    carregarPerfis();
+    return () => { if (timeoutId) clearTimeout(timeoutId); };
+  }, [searchParams, carregarPerfis]);
+
+  const votar = async (liked: boolean) => {
+    const perfilAtual = perfis[indiceAtual];
+    if (!perfilAtual) return;
+    setFlipped(false);
+    setIndiceAtual(prev => prev + 1);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const user = session.user;
+      await supabase.from('likes').insert({ sender_id: user.id, receiver_id: perfilAtual.id, liked });
+    } catch (error) { console.error('Erro ao votar:', error); }
+  };
+
+  if (loading) return (
+    <div className="flex h-screen w-full items-center justify-center bg-[#0f051a] font-black italic text-orange-500 uppercase tracking-widest text-sm">
+      SINCRONIZANDO... 🔥
+    </div>
+  );
+
+  const p = perfis[indiceAtual];
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-[#0f051a] -z-20 pointer-events-none" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
+
+      <main className="relative flex min-h-[100dvh] flex-col items-center pt-4 pb-40 px-6 overflow-x-hidden">
+
+        {showToast && (
+          <div className="fixed top-4 z-[100] animate-in slide-in-from-top duration-500 bg-orange-500 text-white px-6 py-3 rounded-full shadow-2xl border border-white/20 font-black italic uppercase text-[10px] tracking-widest">
+            🔥 Perfil pronto pro rolê!
+          </div>
+        )}
+
+        {p ? (
+          <div className="w-full max-w-sm flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-500 relative z-10">
+
+            <div
+              className="w-full cursor-pointer"
+              style={{ perspective: '1200px' }}
+              onClick={() => setFlipped(f => !f)}
+            >
+              <div
+                style={{
+                  transformStyle: 'preserve-3d',
+                  transition: 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                  position: 'relative',
+                }}
+              >
+
+                {/* ── FRENTE ── */}
+                <div
+                  className="w-full bg-[#1a1a1a] backdrop-blur-2xl rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] overflow-hidden border border-white/10 flex flex-col"
+                  style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+                >
+                  <div className="w-full aspect-[4/5] bg-zinc-900 relative">
+                    {p.foto_url ? (
+                      /* 💉 CIRURGIA 2: Substituído o <Image /> do Next por um <img> padrão */
+                      <img src={p.foto_url} alt={p.nome} className="w-full h-full object-cover absolute inset-0" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-white/5 absolute inset-0">
+                        <User size={100} />
+                      </div>
+                    )}
+                    {/* Degradê que morre no fundo do card */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
+
+                    <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 flex items-center gap-2">
+                      <RotateCcw size={13} className="text-orange-400" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-white/70">Ver mais</span>
+                    </div>
+
+                    {/* Informações movidas mais para baixo (bottom-2) */}
+                    <div className="absolute bottom-2 left-6 right-6 flex flex-col gap-1.5">
+                      <h2 className="text-3xl font-black text-white italic drop-shadow-md leading-none uppercase tracking-tight">
+                        {p.nome}, {p.idade}
+                      </h2>
+                      {p.mostrar_curso && (p.curso || p.instituicao) && (
+                        <p className="text-orange-400 font-black uppercase text-[11px] tracking-[0.15em] leading-none">
+                          {[p.curso, p.instituicao].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {p.genero && (
+                          <span className="bg-black/50 backdrop-blur-md border border-white/10 text-white/70 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">
+                            {p.genero}
+                          </span>
+                        )}
+                        {p.atletica && (
+                          <span className="bg-white/10 backdrop-blur-md border border-white/10 text-white/80 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">
+                            ⚔️ {p.atletica}
+                          </span>
+                        )}
+                        {p.insta && (
+                          <span className="bg-black/50 backdrop-blur-md border border-white/10 text-white/50 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1">
+                            <AtSign size={8} className="text-orange-500" />{p.insta.replace('@', '')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Barra inferior incorporada com botões levemente reduzidos */}
+                  <div className="pt-3 pb-7 flex justify-center items-center gap-6" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => votar(false)} className="w-14 h-14 bg-white/5 backdrop-blur-md border border-red-500/40 rounded-full flex items-center justify-center text-red-500 hover:bg-red-500/20 active:scale-90 transition-all">
+                      <X size={28} strokeWidth={2.5} />
+                    </button>
+                    <button onClick={() => votar(true)} className="w-18 h-18 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-[0_10px_40px_rgba(234,88,12,0.4)] hover:bg-orange-400 active:scale-90 transition-all border border-orange-400/50">
+                      <Heart size={36} fill="currentColor" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── VERSO (MANTIDO EXATAMENTE IGUAL) ── */}
+                <div
+                  className="absolute inset-0 w-full bg-[#130826] backdrop-blur-2xl rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-white/10 flex flex-col"
+                  style={{
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: 'rotateY(180deg)',
+                  }}
+                >
+                  {/* Topo */}
+                  <div className="flex items-center gap-4 px-7 pt-7 pb-5 border-b border-white/5">
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 shrink-0 bg-zinc-900">
+                      {p.foto_url
+                        ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" />
+                        : <div className="w-full h-full flex items-center justify-center text-white/10"><User size={24} /></div>
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-white font-black italic uppercase text-xl leading-none truncate">{p.nome}, {p.idade}</h3>
+                      {p.mostrar_curso && (p.curso || p.instituicao) && (
+                        <p className="text-orange-400 text-[11px] font-black uppercase tracking-widest mt-1 truncate">
+                          {[p.curso, p.instituicao].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="bg-white/5 border border-white/10 rounded-full p-2 shrink-0">
+                      <RotateCcw size={13} className="text-orange-400" />
+                    </div>
+                  </div>
+
+                  {/* Infos */}
+                  <div className="flex-1 px-7 py-6 flex flex-col gap-5 overflow-y-auto">
+
+                    {(p.genero || (p.mostrar_orientacao && p.orientacao)) && (
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 mb-3">Identidade</p>
+                        <div className="flex flex-wrap gap-2">
+                          {p.genero && (
+                            <span className="bg-white/5 border border-white/10 text-white/70 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-widest">
+                              {p.genero}
+                            </span>
+                          )}
+                          {p.mostrar_orientacao && p.orientacao && (
+                            <span className="bg-orange-500/15 border border-orange-500/20 text-orange-400 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-widest">
+                              {p.orientacao}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {p.atletica && (
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 mb-3">Atlética</p>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="bg-white/5 border border-white/10 text-white/70 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-widest">
+                            ⚔️ {p.atletica}
+                          </span>
+                          {p.cargo_atletica && (
+                            <span className="bg-white/5 border border-white/10 text-white/40 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-widest">
+                              {p.cargo_atletica}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {p.tipo_participacao && (
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 mb-3">Participação</p>
+                        <span className={`px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-widest border ${p.tipo_participacao === 'completo' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'}`}>
+                          {p.tipo_participacao === 'completo' ? '🎉 Evento Completo' : '🎊 Só a Festa'}
+                        </span>
+                      </div>
+                    )}
+
+                    {p.insta && (
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 mb-3">Instagram</p>
+                        <span className="bg-black/40 border border-white/10 text-white/60 px-4 py-2 rounded-full text-[11px] font-bold flex items-center gap-2 w-fit">
+                          <AtSign size={12} className="text-orange-500" />@{p.insta.replace('@', '')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Botões verso */}
+                  <div className="pt-4 pb-8 flex justify-center items-center gap-8" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => votar(false)} className="w-16 h-16 bg-white/5 backdrop-blur-md border border-red-500/40 rounded-full flex items-center justify-center text-red-500 hover:bg-red-500/20 active:scale-90 transition-all">
+                      <X size={32} strokeWidth={2.5} />
+                    </button>
+                    <button onClick={() => votar(true)} className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-[0_10px_40px_rgba(234,88,12,0.4)] hover:bg-orange-400 active:scale-90 transition-all border border-orange-400/50">
+                      <Heart size={40} fill="currentColor" />
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 w-full max-w-sm flex flex-col items-center justify-center text-center mt-20">
+            <div className="bg-white/5 backdrop-blur-md p-12 rounded-[3rem] border border-white/5 flex flex-col items-center gap-6 w-full">
+              <div className="text-6xl animate-bounce">🏜️</div>
+              <h2 className="text-xl font-black text-white uppercase italic tracking-tight">Fim do Radar</h2>
+              <p className="text-white/20 font-bold uppercase text-[10px] tracking-widest leading-relaxed">
+                Ninguém novo por aqui... <br /> volte mais tarde! 🚑
+              </p>
+              <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-white/10 border border-white/10 rounded-full text-[10px] font-black uppercase text-white/50 hover:text-white transition-colors">
+                Recarregar
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+    </>
+  );
+}
+
+export default function Matches() {
+  return (
+    <Suspense fallback={<div className="h-screen w-full bg-[#0f051a]" />}>
+      <MatchesContent />
+    </Suspense>
+  );
+}
+</file>
+
+</files>
