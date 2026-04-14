@@ -48,7 +48,7 @@ function LoginContent({
 
       <div className="w-full max-w-xs transition-all duration-300">
         {!showLogin ? (
-          <div className="flex flex-col gap-4 animate-in fade-in zoom-in duration-500">
+          <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-2xl border border-white/10 flex flex-col gap-4 animate-in fade-in zoom-in duration-500">
             <button
               onClick={() => setShowLogin(true)}
               className="w-full bg-orange-500 text-white font-black italic uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-orange-500/20 hover:bg-orange-400 active:scale-95 transition-all text-sm"
@@ -71,7 +71,7 @@ function LoginContent({
             >
               <ChevronLeft size={16} /> Voltar
             </button>
-            
+
             <div className="text-left mb-2">
               <h2 className="text-xl font-black italic text-white uppercase leading-tight">Bem-vindo!</h2>
               <p className="text-white/30 text-[9px] font-bold uppercase tracking-widest mt-1">Insira suas credenciais</p>
@@ -86,7 +86,7 @@ function LoginContent({
                 required
                 className="w-full px-5 py-4 bg-black/20 border border-white/10 rounded-2xl focus:border-orange-500 focus:outline-none text-white font-bold text-xs placeholder:text-white/20 transition-all shadow-inner"
               />
-              
+
               <div className="relative">
                 <input
                   type={mostrarSenha ? 'text' : 'password'}
@@ -113,15 +113,24 @@ function LoginContent({
             >
               {loading ? 'Acessando...' : 'Entrar'}
             </button>
+
+            <a
+              href={`https://wa.me/5588992047393?text=${encodeURIComponent(`Oi, esqueci a senha do meu InterMatch. Meu e-mail é: ${email || '___'}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full text-center text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-white/60 transition-colors mt-2"
+            >
+              Esqueci a senha
+            </a>
           </form>
         )}
       </div>
 
       <footer className="mt-16 flex flex-col items-center gap-4 opacity-60 hover:opacity-100 transition-opacity">
-        <img 
-          src="/NOME.png" 
-          alt="VI INTERCE" 
-          className="w-32 h-auto object-contain drop-shadow-md" 
+        <img
+          src="/NOME.png"
+          alt="VI INTERCE"
+          className="w-32 h-auto object-contain drop-shadow-md"
         />
       </footer>
     </>
@@ -146,6 +155,14 @@ export default function Home() {
     if (error) {
       toast('E-mail ou senha inválidos', 'error');
     } else if (data.user) {
+      // 🚨 SEQUESTRO DE CONTA ZERADA
+      if (password === 'med123') {
+        sessionStorage.setItem('lock_to_redefinir', 'true');
+        router.push('/redefinir');
+        setLoading(false);
+        return;
+      }
+
       const { data: profile } = await supabase.from('profiles').select('id').eq('id', data.user.id).single();
       // 💉 CIRURGIA FEITA AQUI:
       router.push(profile ? '/triagem' : '/perfil/criar');
@@ -167,14 +184,14 @@ export default function Home() {
 
       {/* 💻 DESKTOP (Com a Logo Centralizada no Background) */}
       <div className="hidden md:flex min-h-screen relative z-10">
-        
+
         {/* 💉 LADO ESQUERDO: Ocupa o espaço do fundo e centraliza o LOGO.png */}
-        <div className="flex-1 flex flex-col items-center justify-center p-20 animate-in fade-in zoom-in duration-1000">
-           <img 
-            src="/LOGO.png" 
-            alt="Logo Match Med" 
-            className="max-w-md lg:max-w-lg h-auto object-contain drop-shadow-[0_0_50px_rgba(234,88,12,0.2)]" 
-           />
+        <div className="flex-1 w-full bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans selection:bg-orange-500/30">
+          <img
+            src="/LOGO.png"
+            alt="Logo Match Med"
+            className="max-w-md lg:max-w-lg h-auto object-contain drop-shadow-[0_0_50px_rgba(234,88,12,0.2)]"
+          />
         </div>
 
         {/* BARRA LATERAL COM O LOGIN (Liquid Glass) */}

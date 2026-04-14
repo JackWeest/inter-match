@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { Flame, Heart, User } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -94,8 +94,18 @@ function NavItem({
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [matchCount, setMatchCount] = useState(0);
   const userRef = useRef<string | null>(null);
+
+  // Escolta de Segurança: Impede fuga da tela de Redefinição via URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (sessionStorage.getItem('lock_to_redefinir') === 'true' && pathname !== '/redefinir') {
+        router.push('/redefinir');
+      }
+    }
+  }, [pathname, router]);
 
   const fetchMatchCount = async () => {
     try {
@@ -104,21 +114,12 @@ export default function Navbar() {
       if (!user) return;
       userRef.current = user.id;
 
-      const { data: meusLikes } = await supabase
-        .from('likes').select('receiver_id')
-        .eq('sender_id', user.id).eq('liked', true);
-
-      const { data: likesRecebidos } = await supabase
-        .from('likes').select('sender_id')
-        .eq('receiver_id', user.id).eq('liked', true);
-
-      if (meusLikes && likesRecebidos) {
-        const idsMeusLikes = meusLikes.map(l => l.receiver_id);
-        const idsLikesRecebidos = likesRecebidos.map(l => l.sender_id);
-        const count = idsMeusLikes.filter(id => idsLikesRecebidos.includes(id)).length;
-        matchCountCache.set(count);
-        setMatchCount(count);
-      }
+      // CIRURGIA APLICADA: Chama apenas a RPC e conta os resultados, sem selects duplos
+      const { data } = await supabase.rpc('get_matches_mutuos', { p_user_id: user.id });
+      const count = (data as unknown[])?.length ?? 0;
+      
+      matchCountCache.set(count);
+      setMatchCount(count);
     } catch {
       // silencioso — badge não é crítico
     }
@@ -132,7 +133,7 @@ export default function Navbar() {
 
   // Supabase Realtime: escuta MUDANÇAS (agora super otimizado e seguro)
   useEffect(() => {
-    const rotasSemNavbar = ['/', '/ingressar'];
+    const rotasSemNavbar = ['/', '/ingressar', '/redefinir'];
     if (rotasSemNavbar.includes(pathname)) return;
 
     let channel: ReturnType<typeof supabase.channel>;
@@ -142,9 +143,10 @@ export default function Navbar() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
-      // 2. Abre o canal APENAS para INSERTs onde ele é o "receiver_id"
+      // 2. Abre o canal APENAS para INSERTs onde ele é o "receiver_id". 
+      // O nome do canal agora leva Date.now() para evitar bugs de recarregamento do React (Strict Mode)
       channel = supabase
-        .channel('match-count')
+        .channel(`match-count-${Date.now()}`)
         .on(
           'postgres_changes',
           { 
@@ -178,7 +180,7 @@ export default function Navbar() {
     };
   }, [pathname]);
 
-  const rotasSemNavbar = ['/', '/ingressar', '/perfil/editar'];
+  const rotasSemNavbar = ['/', '/ingressar', '/perfil/editar', '/redefinir'];
   if (rotasSemNavbar.includes(pathname)) return null;
 
   return (

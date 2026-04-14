@@ -1,19 +1,24 @@
 @import "tailwindcss";
 
 @layer base {
-  html, body {
-    background-color: transparent !important;
+
+  html,
+  body {
+    background-color: #0f051a;
+    color: white;
     margin: 0;
     padding: 0;
     height: 100%;
-    width: 100vw;
+    width: 100%;
+    min-height: 100dvh;
     overscroll-behavior: none;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-overflow-scrolling: touch;
   }
 
-  #__next, [data-nextjs-scroll-focus-boundary] {
+  #__next,
+  [data-nextjs-scroll-focus-boundary] {
     height: 100%;
     width: 100%;
   }

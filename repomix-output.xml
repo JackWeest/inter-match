@@ -308,25 +308,6 @@ export function createCache<T>(key: string, ttlMs: number) {
 }
 </file>
 
-<file path="lib/cloudinary.ts">
-export const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dcsiucytm/image/upload';
-
-// Esta função recebe a URL da foto e coloca as "regras" de otimização nela
-export function otimizarUrlCloudinary(urlOriginal: string): string {
-  if (!urlOriginal || !urlOriginal.includes('res.cloudinary.com')) return urlOriginal;
-  
-  // Se a URL já estiver otimizada, não faz nada
-  if (urlOriginal.includes('c_fill')) return urlOriginal;
-
-  // Aqui a gente diz: corta no rosto (g_face), preenche o quadrado (c_fill),
-  // limita o tamanho (w_600, h_800) e melhora o peso (q_auto, f_auto)
-  return urlOriginal.replace(
-    '/upload/',
-    '/upload/c_fill,g_face,w_600,h_800,q_auto,f_auto/'
-  );
-}
-</file>
-
 <file path="lib/photo-cache.ts">
 /**
  * Cache persistente de fotos via Cache Storage API (nível do browser).
@@ -545,6 +526,25 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 'use client';
 export default function Background() {
   return <></>;
+}
+</file>
+
+<file path="lib/cloudinary.ts">
+export const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dcsiucytm/image/upload';
+
+// Esta função recebe a URL da foto e coloca as "regras" de otimização nela
+export function otimizarUrlCloudinary(urlOriginal: string): string {
+  if (!urlOriginal || !urlOriginal.includes('res.cloudinary.com')) return urlOriginal;
+  
+  // Se a URL já estiver otimizada, não faz nada
+  if (urlOriginal.includes('c_fill')) return urlOriginal;
+
+  // Aqui a gente diz: corta no rosto (g_face), preenche o quadrado (c_fill),
+  // limita o tamanho (w_600, h_800) e melhora o peso (q_auto, f_auto)
+  return urlOriginal.replace(
+    '/upload/',
+    '/upload/c_fill,g_face,w_600,h_800,q_auto,f_auto/'
+  );
 }
 </file>
 

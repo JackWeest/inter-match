@@ -91,7 +91,7 @@ function MatchesContent() {
 
       // 2. Cria a escuta apenas para novos likes (INSERT) direcionados a ele (receiver_id)
       channel = supabase
-        .channel('match-list')
+        .channel(`match-list-${Date.now()}`)
         .on(
           'postgres_changes',
           { 
@@ -156,28 +156,37 @@ function MatchesContent() {
           </div>
         ) : matches.length > 0 ? (
           <div className="w-full max-w-sm flex flex-col gap-3">
-            {matches.map((match) => (
+            {matches.map((match) => {
+              const isAlcateia = match.atletica?.trim().toUpperCase().replace('É', 'E') === 'ALCATEIA';
+              return (
               <div
                 key={match.id}
                 onClick={() => setSelectedMatch(match)}
-                className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.08]  p-3 rounded-[1.5rem] shadow-lg border border-white/5 active:scale-[0.98] transition-all group cursor-pointer"
+                className={`flex items-center gap-3 p-3 rounded-[1.5rem] shadow-lg active:scale-[0.98] transition-all group cursor-pointer relative overflow-hidden ${isAlcateia ? 'bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30' : 'bg-white/[0.03] hover:bg-white/[0.08] border border-white/5'}`}
               >
-                <div className="relative w-14 h-14 shrink-0 rounded-2xl overflow-hidden border border-white/10 group-hover:border-orange-500/50 transition-colors bg-zinc-900">
+                {isAlcateia && (
+                  <div className="absolute top-1/2 -translate-y-1/2 right-8 z-0">
+                    <img src="/alcateia.png" alt="Selo" className="w-12 h-12 object-contain drop-shadow-[0_4px_4px_rgba(0,0,0,0.6)]" />
+                  </div>
+                )}
+                <div className={`relative w-14 h-14 shrink-0 rounded-2xl overflow-hidden border transition-colors bg-zinc-900 z-10 ${isAlcateia ? 'border-orange-500/50' : 'border-white/10 group-hover:border-orange-500/50'}`}>
                   {match.foto_url ? (
                     <CachedImage src={match.foto_url} alt={match.nome} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-white/10"><User size={20} /></div>
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-black text-white text-base leading-tight uppercase italic truncate">{match.nome}, {match.idade}</h3>
-                  <p className="text-white/40 text-[9px] font-black uppercase truncate tracking-wider mt-0.5">
+                <div className="flex-1 min-w-0 z-10">
+                  <h3 className="font-black text-white text-base leading-tight uppercase italic truncate">
+                    {match.nome}, {match.idade}
+                  </h3>
+                  <p className={`${isAlcateia ? "text-orange-400/80" : "text-white/40"} text-[9px] font-black uppercase truncate tracking-wider mt-0.5`}>
                     {match.atletica || 'Convidado'}
                   </p>
                 </div>
-                <ChevronRight className="text-white/10 group-hover:text-orange-500 transition-colors" size={20} />
+                <ChevronRight className={`${isAlcateia ? "text-orange-500" : "text-white/10 group-hover:text-orange-500"} transition-colors z-10`} size={20} />
               </div>
-            ))}
+            )})}
             <div className="h-10 w-full pointer-events-none" />
           </div>
         ) : (
@@ -210,11 +219,20 @@ function MatchesContent() {
                 position: 'relative',
               }}
             >
+              {(() => {
+                const isAlcateia = selectedMatch.atletica?.trim().toUpperCase().replace('É', 'E') === 'ALCATEIA';
+                return (
+                  <>
               {/* ── FRENTE DO CARD ── */}
               <div
-                className="w-full aspect-[4/5] bg-[#1a1a1a] rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden border border-white/10 relative flex flex-col"
-                style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+                className={`w-full aspect-[4/5] bg-[#1a1a1a] rounded-[2.5rem] overflow-hidden border relative flex flex-col ${isAlcateia ? 'border-orange-500/50 shadow-[0_0_50px_rgba(249,115,22,0.3)] ring-1 ring-orange-500/20' : 'border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)]'}`}
+                style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'translateZ(0)' }}
               >
+                  {isAlcateia && (
+                    <div className="absolute top-4 left-4 z-50">
+                      <img src="/alcateia.png" alt="Selo Alcateia" className="w-16 h-16 object-contain drop-shadow-[0_4px_4px_rgba(0,0,0,0.6)]" />
+                    </div>
+                  )}
                 <div className="absolute inset-0 z-0">
                   {selectedMatch.foto_url ? (
                     <CachedImage src={selectedMatch.foto_url} alt={selectedMatch.nome} className="w-full h-full object-cover absolute inset-0" />
@@ -225,7 +243,7 @@ function MatchesContent() {
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent z-10 pointer-events-none" />
 
-                <div className="absolute top-5 left-5 z-30 bg-black/80  border border-white/20 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-2xl transition-all">
+                <div className={`absolute top-5 z-30 bg-black/80 border border-white/20 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-2xl transition-all ${isAlcateia ? 'left-1/2 -translate-x-1/2' : 'left-5'}`}>
                   <RotateCcw size={10} className="text-orange-500" />
                   <span className="text-[8px] font-black uppercase tracking-widest text-white">Ver mais</span>
                 </div>
@@ -239,8 +257,10 @@ function MatchesContent() {
 
                 <div className="absolute bottom-0 left-0 right-0 z-20 p-6 flex flex-col gap-4">
                   <div className="flex flex-col gap-0.5">
-                    <h2 className="text-2xl font-black italic text-white uppercase tracking-tight drop-shadow-md">
-                      {selectedMatch.nome}, {selectedMatch.idade}
+                    <h2 className="text-2xl font-black italic uppercase tracking-tight flex items-center gap-2">
+                      <span className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                        {selectedMatch.nome}, {selectedMatch.idade}
+                      </span>
                     </h2>
                     <p className="text-orange-500 font-black text-[10px] uppercase tracking-widest drop-shadow-sm">
                       {selectedMatch.atletica || 'Convidado'}
@@ -267,22 +287,30 @@ function MatchesContent() {
 
               {/* ── VERSO DO CARD ── */}
               <div
-                className="absolute inset-0 w-full aspect-[4/5] bg-[#0f051a]  rounded-[2.5rem] shadow-2xl border border-white/10 flex flex-col overflow-hidden"
+                className={`absolute inset-0 w-full aspect-[4/5] bg-[#0f051a] rounded-[2.5rem] shadow-2xl border flex flex-col overflow-hidden ${isAlcateia ? 'border-orange-500/50 ring-1 ring-orange-500/20' : 'border-white/10'}`}
                 style={{
                   backfaceVisibility: 'hidden',
                   WebkitBackfaceVisibility: 'hidden',
                   transform: 'rotateY(180deg)',
                 }}
               >
-                <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-white/5">
+                  {isAlcateia && (
+                    <div className="absolute bottom-6 right-6 z-50">
+                      <img src="/alcateia.png" alt="Selo Alcateia" className="w-14 h-14 object-contain drop-shadow-[0_4px_4px_rgba(0,0,0,0.6)]" />
+                    </div>
+                  )}
+
+                <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-white/5 relative z-10">
                   <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-zinc-900">
                     {selectedMatch.foto_url
                       ? <CachedImage src={selectedMatch.foto_url} alt={selectedMatch.nome} className="w-full h-full object-cover" />
                       : <div className="w-full h-full flex items-center justify-center text-white/10"><User size={20} /></div>
                     }
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-black italic uppercase text-lg leading-none truncate">{selectedMatch.nome}, {selectedMatch.idade}</h3>
+                  <div className="flex-1 min-w-0 pr-8">
+                    <h3 className="font-black italic uppercase text-lg leading-none truncate text-white">
+                      {selectedMatch.nome}, {selectedMatch.idade}
+                    </h3>
                     <p className="text-orange-500 text-[8px] font-black uppercase tracking-[0.2em] mt-1">Ficha do Participante</p>
                   </div>
                 </div>
@@ -324,6 +352,9 @@ function MatchesContent() {
                   </div>
                 </div>
               </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

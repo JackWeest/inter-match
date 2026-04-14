@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import Catraca from "./components/Catraca";
-import Background from "./components/Background";
+
 import { ToastProvider } from "./components/Toast"; 
 
 const geistSans = Geist({
@@ -40,10 +40,9 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
-      <body className="min-h-screen antialiased flex flex-col relative bg-transparent">
+      <body className="min-h-[100dvh] overflow-x-hidden antialiased flex flex-col relative bg-transparent">
         <ToastProvider>
           <Catraca>
-            <Background />
             <main className="flex-1 w-full relative z-10 bg-transparent">
               {children}
             </main>

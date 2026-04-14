@@ -6,45 +6,12 @@ import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, Loader2, AtSign, ChevronDown } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 
-// Importe o helper no topo do arquivo
-import { otimizarUrlCloudinary } from '../../../lib/cloudinary';
+import { otimizarUrlCloudinary, CLOUDINARY_URL } from '../../../lib/cloudinary';
+// CIRURGIA APLICADA: Importando o CachedImage
+import CachedImage from '../../components/CachedImage';
 
-// ─── DADOS DAS ATLÉTICAS (igual ao onboarding) ────────────────────────────────
-const ATLETICAS = {
-  '1ª Divisão': [
-    { nome: 'Alcateia',     curso: 'Medicina', instituicao: 'UFC Sobral' },
-    { nome: 'Audácia',      curso: 'Medicina', instituicao: 'Unichristus' },
-    { nome: 'Espartana',    curso: 'Medicina', instituicao: 'IDOMED Juazeiro' },
-    { nome: 'Fulminante',   curso: 'Medicina', instituicao: 'UECE' },
-    { nome: 'Ira',          curso: 'Medicina', instituicao: 'UNINTA Sobral' },
-    { nome: 'Kariris',      curso: 'Medicina', instituicao: 'UFCA Barbalha' },
-    { nome: 'Selvagem',     curso: 'Medicina', instituicao: 'UFC Fortaleza' },
-    { nome: 'Tenebrosa',    curso: 'Medicina', instituicao: 'UNIFOR' },
-  ],
-  '2ª Divisão': [
-    { nome: 'Invocada',     curso: 'Medicina', instituicao: 'IDOMED Quixadá' },
-    { nome: 'Caçadora',     curso: 'Medicina', instituicao: 'UECE Crateús' },
-    { nome: 'Perversa',     curso: 'Medicina', instituicao: 'UNINTA Itapipoca' },
-    { nome: 'Aniquiladora', curso: 'Medicina', instituicao: 'IDOMED Iguatu' },
-  ],
-  'Convidadas': [
-    { nome: 'Voraz',         curso: 'Medicina', instituicao: 'F5  Sobral' },
-    { nome: 'Tirana',        curso: 'Medicina', instituicao: 'UECE Quixeramobim' },
-    { nome: 'Exterminadora', curso: 'Medicina', instituicao: 'URCA Cariri' },
-  ],
-} as const;
-
-const TODAS_ATLETICAS = Object.values(ATLETICAS).flat();
-
-const CARGOS = [
-  'Presidente',
-  'Diretor',
-  'Organizador',
-  'Técnico',
-  'Esportista / Jogador',
-  'Egresso',
-  'Acadêmico',
-];
+// ─── DADOS DAS ATLÉTICAS ────────────────────────────────
+import { ATLETICAS, TODAS_ATLETICAS, CARGOS } from '../../../lib/constants';
 
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
 type FormData = {
@@ -61,7 +28,6 @@ type FormData = {
   ver_nb: boolean;
   mostrar_curso: boolean;
   mostrar_orientacao: boolean;
-  // Novas colunas
   tipo_participante: 'atletica' | 'convidado' | string;
   atletica: string;
   cargo_atletica: string;
@@ -107,7 +73,8 @@ const LiveCard = memo(function LiveCard({ f, completion }: { f: FormData; comple
         <CompletionRing pct={completion} />
         <div className="absolute inset-[12px] rounded-full overflow-hidden bg-zinc-900 border border-white/10 shadow-2xl">
           {f.foto_url ? (
-            <img src={f.foto_url} alt="foto" className="w-full h-full object-cover" />
+            /* CIRURGIA APLICADA: Substituído img por CachedImage */
+            <CachedImage src={f.foto_url} alt="foto" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-white/5"><Camera size={32} /></div>
           )}
@@ -198,7 +165,6 @@ export default function EditarPerfil() {
 
   const isAtletica = f.tipo_participante === 'atletica';
 
-  // Quando muda a atlética, preenche curso e instituição automaticamente
   const handleAtletica = (nome: string) => {
     const info = TODAS_ATLETICAS.find(a => a.nome === nome);
     set('atletica', nome);
@@ -241,7 +207,6 @@ export default function EditarPerfil() {
     return () => { isMounted = false; };
   }, []);
 
-  // ─── UPLOAD COM COMPRESSÃO CLIENT-SIDE ──────────────────────────
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
@@ -259,10 +224,7 @@ export default function EditarPerfil() {
       formData.append('file', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
       formData.append('upload_preset', 'intermatch_fotos');
 
-      const cloudName = 'dcsiucytm';
-      const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-
-      const response = await fetch(url, {
+      const response = await fetch(CLOUDINARY_URL, {
         method: 'POST',
         body: formData,
       });
@@ -272,10 +234,7 @@ export default function EditarPerfil() {
       }
 
       const data = await response.json();
-
-      // <--- AQUI A MÁGICA FOI APLICADA --->
       const urlOtimizada = otimizarUrlCloudinary(data.secure_url);
-
       set('foto_url', urlOtimizada);
 
     } catch (err: any) {
@@ -326,7 +285,6 @@ export default function EditarPerfil() {
 
       <div className="h-[100dvh] w-full overflow-y-auto relative scroll-smooth selection:bg-orange-500/30">
 
-        {/* Header */}
         <div className="sticky top-0 z-30 flex items-center justify-between px-6 py-5 border-b border-white/5"
           style={{ background: 'rgba(15, 5, 26, 0.8)', backdropFilter: 'blur(20px)' }}>
           <div className="w-full max-w-6xl mx-auto flex items-center justify-between">
@@ -343,20 +301,13 @@ export default function EditarPerfil() {
         </div>
 
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row">
-
-          {/* Live preview */}
           <aside className="md:sticky md:top-[73px] md:h-[calc(100vh-73px)] w-full md:w-[380px] flex flex-col items-center justify-center py-12 px-6 border-b border-white/5 md:border-b-0 md:border-r border-white/5 bg-white/[0.01]">
             <LiveCard f={f} completion={completion} />
           </aside>
 
-          {/* Form */}
           <div className="flex-1 w-full px-6 md:px-16 py-12 max-w-2xl mx-auto">
-
-            {/* ── Participação ── */}
             <Section title="Participação">
               <div className="flex flex-col gap-3">
-
-                {/* Tipo de participante */}
                 <Field label="Você é">
                   <div className="flex gap-2">
                     {[
@@ -374,7 +325,6 @@ export default function EditarPerfil() {
                   </div>
                 </Field>
 
-                {/* Atlética + cargo (só se for membro) */}
                 {isAtletica && (
                   <>
                     <Field label="Atlética">
@@ -412,7 +362,6 @@ export default function EditarPerfil() {
                   </>
                 )}
 
-                {/* Tipo de participação (para todos) */}
                 {f.tipo_participante && (
                   <Field label="Participação no Evento">
                     <div className="flex gap-2">
@@ -437,7 +386,6 @@ export default function EditarPerfil() {
               </div>
             </Section>
 
-            {/* ── Identidade ── */}
             <Section title="Identidade">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
                 <div className="md:col-span-2">
@@ -472,7 +420,6 @@ export default function EditarPerfil() {
               </div>
             </Section>
 
-            {/* ── Acadêmico ── só editável para convidados; atlética é preenchido auto ── */}
             <Section title="Acadêmico">
               {isAtletica ? (
                 <>
@@ -496,7 +443,6 @@ export default function EditarPerfil() {
               <Toggle label="Mostrar curso e facul" checked={f.mostrar_curso} onChange={(val) => set('mostrar_curso', val)} />
             </Section>
 
-            {/* ── Fotografia ── */}
             <Section title="Fotografia">
               <input type="file" ref={fileInputRef} onChange={handleUpload} accept="image/*" className="hidden" />
               <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
@@ -504,7 +450,8 @@ export default function EditarPerfil() {
                 {f.foto_url ? (
                   <>
                     <div className="w-20 h-20 rounded-2xl overflow-hidden ring-1 ring-white/10 group-hover:ring-orange-500/50">
-                      <img src={f.foto_url} className="w-full h-full object-cover" alt="foto" />
+                      {/* CIRURGIA APLICADA: Substituído img por CachedImage */}
+                      <CachedImage src={f.foto_url} alt="foto" className="w-full h-full object-cover" />
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-widest text-white/20 group-hover:text-orange-500">Trocar Imagem</span>
                   </>
@@ -519,7 +466,6 @@ export default function EditarPerfil() {
               </button>
             </Section>
 
-            {/* ── Radar de Plantão ── */}
             <Section title="Radar de Plantão">
               <div className="flex gap-2">
                 {[
@@ -539,7 +485,6 @@ export default function EditarPerfil() {
               </div>
             </Section>
 
-            {/* ── Instagram ── */}
             <Section title="Instagram">
               <div className="flex items-center gap-3 bg-black/60  border border-white/10 rounded-xl px-4 py-4 focus-within:border-orange-500/50 transition-all">
                 <AtSign size={16} className="text-white/20" />
@@ -552,7 +497,6 @@ export default function EditarPerfil() {
           </div>
         </div>
 
-        {/* Floating Save Button (Mobile) */}
         <div className="md:hidden fixed bottom-8 left-6 right-6 z-40">
           <button onClick={salvar} disabled={loading || saved}
             className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-2xl ${saved ? 'bg-green-500 text-white' : 'bg-orange-500 text-white shadow-orange-500/20'}`}>

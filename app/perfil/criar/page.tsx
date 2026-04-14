@@ -6,45 +6,10 @@ import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, ArrowRight, Loader2, AtSign, Check, ChevronDown, Shield, FileText, AlertTriangle } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 
-// Importe o helper no topo do arquivo
-import { otimizarUrlCloudinary } from '../../../lib/cloudinary';
+// CIRURGIA APLICADA: Importando a constante CLOUDINARY_URL
+import { otimizarUrlCloudinary, CLOUDINARY_URL } from '../../../lib/cloudinary';
 
-// ─── DADOS DAS ATLÉTICAS ───────────────────────────────────────────────────────
-const ATLETICAS = {
-  '1ª Divisão': [
-    { nome: 'Alcateia',     curso: 'Medicina', instituicao: 'UFC Sobral' },
-    { nome: 'Audácia',      curso: 'Medicina', instituicao: 'Unichristus' },
-    { nome: 'Espartana',    curso: 'Medicina', instituicao: 'IDOMED Juazeiro' },
-    { nome: 'Fulminante',   curso: 'Medicina', instituicao: 'UECE' },
-    { nome: 'Ira',          curso: 'Medicina', instituicao: 'UNINTA Sobral' },
-    { nome: 'Kariris',      curso: 'Medicina', instituicao: 'UFCA Barbalha' },
-    { nome: 'Selvagem',     curso: 'Medicina', instituicao: 'UFC Fortaleza' },
-    { nome: 'Tenebrosa',    curso: 'Medicina', instituicao: 'UNIFOR' },
-  ],
-  '2ª Divisão': [
-    { nome: 'Invocada',     curso: 'Medicina', instituicao: 'IDOMED Quixadá' },
-    { nome: 'Caçadora',     curso: 'Medicina', instituicao: 'UECE Crateús' },
-    { nome: 'Perversa',     curso: 'Medicina', instituicao: 'UNINTA Itapipoca' },
-    { nome: 'Aniquiladora', curso: 'Medicina', instituicao: 'IDOMED Iguatu' },
-  ],
-  'Convidadas': [
-    { nome: 'Voraz',         curso: 'Medicina', instituicao: 'F5 Sobral' },
-    { nome: 'Tirana',        curso: 'Medicina', instituicao: 'UECE Quixeramobim' },
-    { nome: 'Exterminadora', curso: 'Medicina', instituicao: 'URCA Cariri' },
-  ],
-} as const;
-
-const TODAS_ATLETICAS = Object.values(ATLETICAS).flat();
-
-const CARGOS = [
-  'Presidente',
-  'Diretor',
-  'Organizador',
-  'Técnico',
-  'Esportista / Jogador',
-  'Egresso',
-  'Acadêmico',
-];
+import { ATLETICAS, TODAS_ATLETICAS, CARGOS } from '../../../lib/constants';
 
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
 type TipoParticipante = 'atletica' | 'convidado' | null;
@@ -175,45 +140,7 @@ function StepTermos({ f, set }: { f: OnboardingData; set: (k: keyof OnboardingDa
       </div>
 
       <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 text-xs text-white/50 leading-relaxed space-y-4 max-h-[400px] overflow-y-auto">
-        <div>
-          <p className="text-white font-bold text-[11px] uppercase tracking-wider mb-1">Bem-vindo ao Inter-Match!</p>
-          <p>Antes de criar sua conta e começar a usar o aplicativo, é obrigatório que você leia e concorde com as regras abaixo. Ao clicar em {"\""}Aceitar{"\""}, você confirma que compreendeu e concorda com todas as condições descritas.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">1. Natureza do Aplicativo</p>
-          <p>O Inter-Match é uma iniciativa 100% recreativa e sem fins lucrativos, criada exclusivamente para promover a interação entre os participantes da festa do InterCE, organizada pela Alcateia. O aplicativo não possui vínculo comercial e não garante encontros ou qualquer tipo de resultado no mundo real.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">2. Declaração de Maioridade</p>
-          <p>Ao se cadastrar, você declara expressamente ter 18 (dezoito) anos de idade completos ou mais. O uso deste aplicativo por menores de idade é estritamente proibido. Caso seja identificada a presença de menores, a conta será imediatamente banida.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">3. Direitos de Imagem e Conteúdo</p>
-          <p>Ao enviar uma foto para o nosso banco de dados, você concede permissão para que sua imagem seja exibida para outros usuários dentro do aplicativo. Você declara que a imagem enviada é de sua própria autoria ou que possui os direitos de uso sobre ela, e assume total responsabilidade pelo conteúdo da foto enviada.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">4. Conduta do Usuário e Proibições</p>
-          <p>É terminantemente proibido: criação de perfis falsos ou uso de fotos de outras pessoas sem autorização; envio de imagens contendo nudez explícita, violência ou material impróprio; qualquer tipo de discurso de ódio, assédio, racismo, homofobia ou ofensa a outros usuários. Perfis que violarem essas regras serão imediatamente excluídos sem aviso prévio.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">5. Isenção de Responsabilidade</p>
-          <p>O aplicativo é fornecido {"\""}no estado em que se encontra{"\""}, sem garantias de funcionamento ininterrupto. O Inter-Match é uma iniciativa estritamente independente — o evento InterCE, a empresa SOMOS, e os patrocinadores Medway e Nymu não possuem qualquer vínculo legal, administrativo, financeiro ou de desenvolvimento com este aplicativo.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">6. Proteção de Dados (Privacidade)</p>
-          <p>Os dados coletados (nome, foto, informações de perfil) serão utilizados única e exclusivamente para o funcionamento do aplicativo durante o período relacionado ao evento do InterCE.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">7. Disposições Gerais e Foro</p>
-          <p>Estes termos são regidos pelas leis brasileiras. Para dirimir quaisquer controvérsias decorrentes do uso do aplicativo, fica eleito o foro da Comarca de Sobral - CE.</p>
-        </div>
+        <TermosDeUso />
       </div>
 
       <label className="flex items-start gap-4 cursor-pointer group bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/20 rounded-xl px-5 py-4 transition-all mt-2">
@@ -619,10 +546,8 @@ export default function CriarPerfil() {
       formData.append('file', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
       formData.append('upload_preset', 'intermatch_fotos');
 
-      const cloudName = 'dcsiucytm';
-      const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-
-      const response = await fetch(url, {
+      // CIRURGIA APLICADA: Utilizando CLOUDINARY_URL diretamente no fetch
+      const response = await fetch(CLOUDINARY_URL, {
         method: 'POST',
         body: formData,
       });
@@ -633,7 +558,6 @@ export default function CriarPerfil() {
 
       const data = await response.json();
       
-      // <--- AQUI A SUA MÁGICA FOI APLICADA --->
       const urlOtimizada = otimizarUrlCloudinary(data.secure_url); 
 
       set('foto_url', urlOtimizada);
