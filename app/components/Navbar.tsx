@@ -93,7 +93,7 @@ function NavItem({
 }
 
 export default function Navbar() {
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   const router = useRouter();
   const [matchCount, setMatchCount] = useState(0);
   const userRef = useRef<string | null>(null);

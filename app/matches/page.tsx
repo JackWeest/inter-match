@@ -25,6 +25,29 @@ type MatchProfile = {
 
 const matchesCache = createCache<MatchProfile[]>('matches', 120_000);
 
+// ─── 💉 O RADAR FOFOQUEIRO (Executa invisível no background) ───
+// Fica escutando o grito de 'match-created' da Triagem para baixar os dados
+// silenciosamente antes mesmo de você clicar na aba!
+if (typeof window !== 'undefined' && !(window as any)._fofocaListenerAttached) {
+  (window as any)._fofocaListenerAttached = true;
+  window.addEventListener('match-created', async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data } = await supabase.rpc('get_matches_mutuos', { p_user_id: session.user.id });
+        if (data) {
+          const typed = data as MatchProfile[];
+          matchesCache.set(typed);
+          // Avisa o componente React caso ele já esteja na tela
+          window.dispatchEvent(new CustomEvent('matches-ready-in-cache'));
+        }
+      }
+    } catch (error) {
+      console.error('Erro na fofoca:', error);
+    }
+  });
+}
+
 export const dynamic = 'force-dynamic';
 
 function MatchesContent() {
@@ -70,26 +93,38 @@ function MatchesContent() {
     };
 
     carregarMatches();
-    return () => { montado = false; };
+
+    // 💉 Escuta a fofoca para atualizar a tela na hora sem precisar recarregar
+    const handleCacheReady = () => {
+      const cached = matchesCache.get();
+      if (cached && montado) {
+        setMatches(cached);
+        setLoading(false);
+      }
+    };
+    window.addEventListener('matches-ready-in-cache', handleCacheReady);
+
+    return () => { 
+      montado = false; 
+      window.removeEventListener('matches-ready-in-cache', handleCacheReady);
+    };
   }, []);
 
   useEffect(() => {
-    if (searchParams.get('success') === 'true') {
+   if (searchParams?.get('success') === 'true') {
       toast('Perfil pronto pro rolê!');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // ─── 💉 MÁGICA APLICADA AQUI: Supabase Realtime Otimizado ───
+  // ─── Supabase Realtime Otimizado (Escuta ações de outras pessoas) ───
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel>;
 
     const setupRealtime = async () => {
-      // 1. Precisamos da sessão para pegar o ID do usuário
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
-      // 2. Cria a escuta apenas para novos likes (INSERT) direcionados a ele (receiver_id)
       channel = supabase
         .channel(`match-list-${Date.now()}`)
         .on(
@@ -98,7 +133,7 @@ function MatchesContent() {
             event: 'INSERT', 
             schema: 'public', 
             table: 'likes',
-            filter: `receiver_id=eq.${session.user.id}` // 👈 SALVAÇÃO DE QUOTA
+            filter: `receiver_id=eq.${session.user.id}`
           },
           () => {
             matchesCache.invalidate();

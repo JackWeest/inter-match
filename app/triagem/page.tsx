@@ -85,7 +85,7 @@ function TriagemContent() {
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    if (searchParams.get('success') === 'true') {
+    if (searchParams?.get('success') === 'true') {
       setShowToast(true);
       timeoutId = setTimeout(() => setShowToast(false), 4000);
     }
@@ -118,13 +118,26 @@ function TriagemContent() {
       votando.current = false;
       return;
     }
+    
     setFlipped(false);
     setIndiceAtual(prev => prev + 1);
+    
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
       const user = session.user;
-      await supabase.from('likes').upsert({ sender_id: user.id, receiver_id: perfilAtual.id, liked });
+      
+      // 💉 CIRURGIA 1: onConflict garante a atualização exata do voto sem duplicar
+      await supabase.from('likes').upsert(
+        { sender_id: user.id, receiver_id: perfilAtual.id, liked },
+        { onConflict: 'sender_id,receiver_id' }
+      );
+
+      // 💉 CIRURGIA 2: Atualiza a bolinha da Navbar na mesma hora se for Like!
+      if (liked) {
+        window.dispatchEvent(new CustomEvent('match-created'));
+      }
+      
     } catch (error) { 
       console.error('Erro ao votar:', error); 
     } finally {
@@ -153,9 +166,16 @@ function TriagemContent() {
 
   const desfazerVoto = async () => {
     if (indiceAtual === 0) return;
+    if (votando.current) return; // 💉 CIRURGIA 3: Impede a "Condição de Corrida"
+    
+    votando.current = true;
     const previousIndex = indiceAtual - 1;
     const perfilAnterior = perfis[previousIndex];
-    if (!perfilAnterior) return;
+    
+    if (!perfilAnterior) {
+      votando.current = false;
+      return;
+    }
 
     // Volta imediatamente na UI
     setIndiceAtual(previousIndex);
@@ -172,6 +192,8 @@ function TriagemContent() {
         .match({ sender_id: session.user.id, receiver_id: perfilAnterior.id });
     } catch (error) {
       console.error('Erro ao desfazer voto:', error);
+    } finally {
+      votando.current = false; // 💉 Libera para votar de novo apenas quando terminar
     }
   };
 
@@ -237,7 +259,6 @@ function TriagemContent() {
                   
                   <div className="w-full aspect-[4/5] bg-zinc-900 relative">
                     {p.foto_url ? (
-                      /* CIRURGIA APLICADA: Substituído img por CachedImage na FRENTE */
                       <CachedImage src={p.foto_url} alt={p.nome} className="w-full h-full object-cover absolute inset-0" />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-white/5 absolute inset-0">
@@ -343,7 +364,7 @@ function TriagemContent() {
                   <div className="flex items-center gap-4 px-7 pt-7 pb-5 border-b border-white/5 relative z-10">
                     <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 shrink-0 bg-zinc-900">
                       {p.foto_url
-                        ? <CachedImage src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" /> /* CIRURGIA APLICADA NO VERSO */
+                        ? <CachedImage src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" />
                         : <div className="w-full h-full flex items-center justify-center text-white/10"><User size={24} /></div>
                       }
                     </div>
@@ -387,7 +408,7 @@ function TriagemContent() {
                             <span className="bg-orange-500/15 border border-orange-500/20 text-orange-400 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-widest">
                               {p.orientacao}
                             </span>
-                          )} {/* 👈 O ERRO ESTAVA AQUI! O ')}' FOI RECUPERADO */}
+                          )}
                         </div>
                       </div>
                     )}

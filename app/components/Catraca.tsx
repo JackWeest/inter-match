@@ -13,12 +13,13 @@ const sessionCache: { current: AuthState | null } = { current: null };
 
 export default function Catraca({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   const [pronto, setPronto] = useState(false);
   const verificandoRef = useRef(false);
 
   const rotasPublicas = ['/', '/ingressar'];
   const rotasCriarPerfil = ['/perfil/criar'];
+  const rotasSemPerfilPermitidas = ['/perfil/criar', '/redefinir'];
 
   useEffect(() => {
     let ignorado = false;
@@ -29,6 +30,16 @@ export default function Catraca({ children }: { children: React.ReactNode }) {
 
       try {
         const { data: { session } } = await supabase.auth.getSession();
+
+        // 🔒 TRAVA ABSOLUTA DO ADMIN: Só entra se tiver sessão E for o seu e-mail
+        if (pathname.startsWith('/admin')) {
+          if (!session || session.user.email !== 'janiejunior123@gmail.com') {
+            router.replace('/'); // Chuta de volta pra Home se tentar dar uma de espertinho
+            return;
+          }
+          setPronto(true); // É você? Então a catraca abre.
+          return;
+        }
 
         // Sem sessão em rota pública → permite
         if (rotasPublicas.includes(pathname)) {
@@ -47,7 +58,8 @@ export default function Catraca({ children }: { children: React.ReactNode }) {
         // Perfil completo = tem 'nome' preenchido (registro só salva 'insta')
         if (sessionCache.current?.userId === session.user.id) {
           const cached = sessionCache.current;
-          if (!cached.temPerfil && !rotasCriarPerfil.includes(pathname)) {
+          // 💉 CORREÇÃO AQUI: Usando rotasSemPerfilPermitidas no cache
+          if (!cached.temPerfil && !rotasSemPerfilPermitidas.includes(pathname)) {
             router.replace('/perfil/criar');
           } else if (cached.temPerfil && rotasCriarPerfil.includes(pathname)) {
             router.replace('/perfil/editar');
@@ -70,7 +82,8 @@ export default function Catraca({ children }: { children: React.ReactNode }) {
           sessionCache.current = { userId: session.user.id, temPerfil };
         }
 
-        if (!temPerfil && !rotasCriarPerfil.includes(pathname)) {
+        // 💉 CORREÇÃO AQUI: Usando rotasSemPerfilPermitidas no banco
+        if (!temPerfil && !rotasSemPerfilPermitidas.includes(pathname)) {
           router.replace('/perfil/criar');
           return;
         }

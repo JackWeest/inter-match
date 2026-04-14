@@ -477,10 +477,13 @@ export default function CriarPerfil() {
 
   const set = (key: keyof OnboardingData, val: any) => setF(prev => ({ ...prev, [key]: val }));
 
-  useEffect(() => {
+ useEffect(() => {
     let isMounted = true;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      // 💉 Correção: Usando getSession() para evitar o erro de Lock no React 18
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      
       if (user) {
         const { data: profile } = await supabase.from('profiles').select('insta').eq('id', user.id).single();
         if (profile?.insta && isMounted) {
