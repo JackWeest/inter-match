@@ -5,6 +5,7 @@ import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, ArrowRight, Loader2, AtSign, Check, ChevronDown, Shield, FileText, AlertTriangle } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
+import TermosDeUso from '../../components/TermosDeUso';
 
 // CIRURGIA APLICADA: Importando a constante CLOUDINARY_URL
 import { otimizarUrlCloudinary, CLOUDINARY_URL } from '../../../lib/cloudinary';
@@ -557,8 +558,8 @@ export default function CriarPerfil() {
       }
 
       const data = await response.json();
-      
-      const urlOtimizada = otimizarUrlCloudinary(data.secure_url); 
+
+      const urlOtimizada = otimizarUrlCloudinary(data.secure_url);
 
       set('foto_url', urlOtimizada);
 
@@ -606,7 +607,7 @@ export default function CriarPerfil() {
         setSaved(true);
         // Limpar cache da Catraca pra ela saber que o perfil está completo
         // @ts-ignore - Catraca usa módulo global, acessível via import
-        try { window.dispatchEvent(new CustomEvent('profile-created')); } catch {}
+        try { window.dispatchEvent(new CustomEvent('profile-created')); } catch { }
         setTimeout(() => router.push('/triagem'), 800);
       }
     }
