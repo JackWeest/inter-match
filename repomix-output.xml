@@ -43,10 +43,11 @@ The content is organized as follows:
 .gitattributes
 .gitignore
 AGENTS.md
-app/components/Background.tsx
+app/admin/page.tsx
 app/components/CachedImage.tsx
 app/components/Catraca.tsx
 app/components/Navbar.tsx
+app/components/TermosDeUso.tsx
 app/components/Toast.tsx
 app/favicon.ico
 app/globals.css
@@ -58,16 +59,20 @@ app/page.tsx
 app/perfil/criar/page.tsx
 app/perfil/editar/page.tsx
 app/perfil/page.tsx
+app/redefinir/page.tsx
 app/triagem/page.tsx
 CLAUDE.md
 eslint.config.mjs
 lib/cache.ts
 lib/cloudinary.ts
+lib/constants.ts
 lib/photo-cache.ts
 lib/supabase.ts
 next.config.ts
 package.json
+page_head.txt
 postcss.config.mjs
+public/alcateia.png
 public/LOGO.png
 public/next.svg
 public/NOME.png
@@ -134,6 +139,51 @@ next-env.d.ts
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
+</file>
+
+<file path="app/components/TermosDeUso.tsx">
+export default function TermosDeUso() {
+  return (
+    <>
+      <p className="text-white/70 text-xs font-medium">Bem-vindo ao Inter-Match! Antes de criar sua conta e começar a usar o aplicativo, é obrigatório que você leia e concorde com as regras abaixo.</p>
+
+      <div>
+        <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">1. Natureza do Aplicativo</p>
+        <p>O Inter-Match é uma iniciativa 100% recreativa e sem fins lucrativos, criada exclusivamente para promover a interação entre os participantes da festa do InterCE, organizada pela Alcateia. O aplicativo não possui vínculo comercial e não garante encontros ou qualquer tipo de resultado no mundo real.</p>
+      </div>
+
+      <div>
+        <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">2. Declaração de Maioridade</p>
+        <p>Ao se cadastrar, você declara expressamente ter 18 (dezoito) anos de idade completos ou mais. O uso deste aplicativo por menores de idade é estritamente proibido.</p>
+      </div>
+
+      <div>
+        <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">3. Direitos de Imagem e Conteúdo</p>
+        <p>Ao enviar uma foto para o banco de dados, você concede permissão para que sua imagem seja exibida dentro do app, declara ser autor ou possuir os direitos de uso, e assume total responsabilidade pelo conteúdo enviado.</p>
+      </div>
+
+      <div>
+        <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">4. Conduta do Usuário</p>
+        <p>É terminantemente proibido: criação de perfis falsos, envio de nudez explícita ou violência, e qualquer tipo de discurso de ódio, assédio, racismo, homofobia ou ofensa. Perfis infratores serão excluídos sem aviso prévio.</p>
+      </div>
+
+      <div>
+        <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">5. Isenção de Responsabilidade e Independência</p>
+        <p>O app é fornecido &quot;no estado em que se encontra&quot;, sem garantias. O Inter-Match é independente — o evento InterCE, a empresa SOMOS, e os patrocinadores Medway e Nymu não possuem qualquer vínculo com este aplicativo e estão isentos de responsabilidade.</p>
+      </div>
+
+      <div>
+        <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">6. Proteção de Dados</p>
+        <p>Os dados coletados serão utilizados única e exclusivamente para o funcionamento do aplicativo durante o período relacionado ao evento do InterCE.</p>
+      </div>
+
+      <div>
+        <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">7. Foro</p>
+        <p>Estes termos são regidos pelas leis brasileiras. Para dirimir quaisquer controvérsias, fica eleito o foro da Comarca de Sobral - CE.</p>
+      </div>
+    </>
+  );
+}
 </file>
 
 <file path="app/components/Toast.tsx">
@@ -251,6 +301,122 @@ export default function NotFound() {
 }
 </file>
 
+<file path="app/redefinir/page.tsx">
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '../../lib/supabase';
+import { useToast } from '../components/Toast';
+import { ShieldAlert, RefreshCw, Eye, EyeOff } from 'lucide-react';
+
+export default function RedefinirPage() {
+  const [novaSenha, setNovaSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleRedefinir = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (novaSenha !== confirmarSenha) {
+      toast('As senhas não coincidem!', 'error');
+      return;
+    }
+    if (novaSenha.length < 6) {
+      toast('A senha deve ter pelo menos 6 caracteres', 'error');
+      return;
+    }
+    if (novaSenha === 'med123') {
+      toast('A nova senha não pode ser igual a provisória!', 'error');
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({
+      password: novaSenha
+    });
+
+    if (error) {
+      toast('Erro ao atualizar senha. Tente novamente.', 'error');
+      setLoading(false);
+      return;
+    }
+
+    sessionStorage.removeItem('lock_to_redefinir');
+    toast('Senha alterada com sucesso!', 'success');
+    
+    // Agora que mudou, vamos saber pra onde mandar
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const { data: profile } = await supabase.from('profiles').select('id').eq('id', session.user.id).single();
+      router.push(profile ? '/triagem' : '/perfil/criar');
+    } else {
+      router.push('/');
+    }
+  };
+
+  return (
+    <div className="bg-[#0f051a] min-h-screen relative flex items-center justify-center p-6 text-white overflow-hidden">
+      <div className="fixed inset-0 bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.05] z-0 pointer-events-none" />
+      
+      <div className="relative z-10 w-full max-w-sm">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="bg-red-500/10 p-5 rounded-[2rem] border border-red-500/20 shadow-[0_10px_30px_rgba(239,68,68,0.2)] mb-5">
+            <ShieldAlert size={48} className="text-red-500" />
+          </div>
+          <h1 className="text-2xl font-black italic uppercase tracking-wider mb-2">Redefinição Obrigatória</h1>
+          <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest text-center">
+            Você entrou com uma senha de recuperação.<br/>Por segurança, crie uma senha nova agora.
+          </p>
+        </div>
+
+        <form onSubmit={handleRedefinir} className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-2xl border border-white/10 flex flex-col gap-4 animate-in slide-in-from-bottom-4 duration-500">
+          
+          <div className="relative">
+            <input
+              type={mostrarSenha ? 'text' : 'password'}
+              placeholder="NOVA SENHA"
+              value={novaSenha}
+              onChange={(e) => setNovaSenha(e.target.value)}
+              required
+              className="w-full px-5 py-4 pr-12 bg-black/40 border border-white/10 rounded-2xl focus:border-red-500 focus:outline-none text-white font-bold text-xs tracking-[0.1em] placeholder:tracking-widest shadow-inner transition-colors"
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarSenha(prev => !prev)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-red-500 transition-colors"
+            >
+              {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+
+          <div className="relative mb-2">
+            <input
+              type={mostrarSenha ? 'text' : 'password'}
+              placeholder="CONFIRMAR NOVA SENHA"
+              value={confirmarSenha}
+              onChange={(e) => setConfirmarSenha(e.target.value)}
+              required
+              className="w-full px-5 py-4 pr-12 bg-black/40 border border-white/10 rounded-2xl focus:border-red-500 focus:outline-none text-white font-bold text-xs tracking-[0.1em] placeholder:tracking-widest shadow-inner transition-colors"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex justify-center items-center gap-2 bg-red-600 text-white font-black italic uppercase tracking-widest py-4 rounded-2xl hover:bg-red-500 transition-all shadow-lg shadow-red-500/20 active:scale-95 disabled:opacity-50 text-sm"
+          >
+            {loading ? <RefreshCw className="animate-spin" size={18} /> : 'Salvar Nova Senha'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="CLAUDE.md">
 @AGENTS.md
 </file>
@@ -278,34 +444,87 @@ export default eslintConfig;
 
 <file path="lib/cache.ts">
 /**
- * Cache simples em memÃ³ria por sessÃ£o.
- * Evita re-fetch desnecessÃ¡rio ao navegar entre pÃ¡ginas.
- * TTL padrÃ£o: 120s (configurÃ¡vel na criaÃ§Ã£o).
+ * Cache persistente por sessão via sessionStorage.
+ * Sobrevive a reloads (F5), mas limpa quando a aba fecha.
+ * Protegido contra SSR (Next.js) e erros de parse.
  */
-type CacheEntry<T> = {
-  data: T;
-  expiresAt: number;
-};
-
-const store: Record<string, CacheEntry<unknown>> = {};
-
 export function createCache<T>(key: string, ttlMs: number) {
+  // Verificação de segurança para não quebrar no servidor do Next.js
+  const isBrowser = typeof window !== 'undefined';
+
   return {
     get(): T | null {
-      const entry = store[key];
-      if (entry && entry.expiresAt > Date.now()) return entry.data as T;
-      // expirado ou nÃ£o existe
-      if (entry) delete store[key];
-      return null;
+      if (!isBrowser) return null;
+      try {
+        const item = sessionStorage.getItem(key);
+        if (!item) return null;
+        
+        const entry = JSON.parse(item) as { data: T; expiresAt: number };
+        
+        if (entry.expiresAt > Date.now()) {
+          return entry.data;
+        }
+        
+        // Expirou: faz a limpeza
+        sessionStorage.removeItem(key);
+        return null;
+      } catch {
+        return null; // Falha no parse de JSON, ignora e busca novo
+      }
     },
     set(data: T) {
-      store[key] = { data, expiresAt: Date.now() + ttlMs };
+      if (!isBrowser) return;
+      try {
+        const entry = { data, expiresAt: Date.now() + ttlMs };
+        sessionStorage.setItem(key, JSON.stringify(entry));
+      } catch (err) {
+        // Silencioso. Pode falhar se o sessionStorage estourar limite de tamanho (raro)
+      }
     },
     invalidate() {
-      delete store[key];
+      if (!isBrowser) return;
+      sessionStorage.removeItem(key);
     },
   };
 }
+</file>
+
+<file path="lib/constants.ts">
+export const ATLETICAS = {
+  '1ª Divisão': [
+    { nome: 'Alcateia',     curso: 'Medicina', instituicao: 'UFC Sobral' },
+    { nome: 'Audácia',      curso: 'Medicina', instituicao: 'Unichristus' },
+    { nome: 'Espartana',    curso: 'Medicina', instituicao: 'IDOMED Juazeiro' },
+    { nome: 'Fulminante',   curso: 'Medicina', instituicao: 'UECE' },
+    { nome: 'Ira',          curso: 'Medicina', instituicao: 'UNINTA Sobral' },
+    { nome: 'Kariris',      curso: 'Medicina', instituicao: 'UFCA Barbalha' },
+    { nome: 'Selvagem',     curso: 'Medicina', instituicao: 'UFC Fortaleza' },
+    { nome: 'Tenebrosa',    curso: 'Medicina', instituicao: 'UNIFOR' },
+  ],
+  '2ª Divisão': [
+    { nome: 'Invocada',     curso: 'Medicina', instituicao: 'IDOMED Quixadá' },
+    { nome: 'Caçadora',     curso: 'Medicina', instituicao: 'UECE Crateús' },
+    { nome: 'Perversa',     curso: 'Medicina', instituicao: 'UNINTA Itapipoca' },
+    { nome: 'Aniquiladora', curso: 'Medicina', instituicao: 'IDOMED Iguatu' },
+  ],
+  'Convidadas': [
+    { nome: 'Voraz',         curso: 'Medicina', instituicao: 'F5 Sobral' },
+    { nome: 'Tirana',        curso: 'Medicina', instituicao: 'UECE Quixeramobim' },
+    { nome: 'Exterminadora', curso: 'Medicina', instituicao: 'URCA Cariri' },
+  ],
+} as const;
+
+export const TODAS_ATLETICAS = Object.values(ATLETICAS).flat();
+
+export const CARGOS = [
+  'Presidente',
+  'Diretor',
+  'Organizador',
+  'Técnico',
+  'Esportista / Jogador',
+  'Egresso',
+  'Acadêmico',
+];
 </file>
 
 <file path="lib/photo-cache.ts">
@@ -432,6 +651,196 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 export const supabase = createClient(supabaseUrl, supabaseKey)
 </file>
 
+<file path="page_head.txt">
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Flame, ChevronLeft, Eye, EyeOff } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { useToast } from './components/Toast';
+
+interface LoginContentProps {
+  showLogin: boolean;
+  setShowLogin: (v: boolean) => void;
+  email: string;
+  setEmail: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  loading: boolean;
+  handleLogin: (e: React.FormEvent) => void;
+}
+
+// Componente isolado com o conte├║do de Login
+function LoginContent({
+  showLogin,
+  setShowLogin,
+  email,
+  setEmail,
+  password,
+  setPassword,
+  loading,
+  handleLogin,
+}: LoginContentProps) {
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+
+  return (
+    <>
+      {/* LOGO SUPERIOR (├ìCONE) */}
+      <div className="mb-10 flex flex-col items-center text-center">
+        <div className="bg-orange-500 p-5 rounded-[2rem] shadow-[0_10px_30px_rgba(234,88,12,0.3)] mb-5 transition-transform duration-500 hover:rotate-12">
+          <Flame size={48} color="white" fill="white" />
+        </div>
+        <h1 className="text-4xl font-black text-white italic uppercase tracking-tighter drop-shadow-lg">
+          INTER <span className="text-orange-500">MATCH</span>
+        </h1>
+        <p className="text-white/30 text-[10px] font-black uppercase tracking-[0.3em] mt-2">
+          Sintonize com novas conex├Áes
+        </p>
+      </div>
+
+      <div className="w-full max-w-xs transition-all duration-300">
+        {!showLogin ? (
+          <div className="flex flex-col gap-4 animate-in fade-in zoom-in duration-500">
+            <button
+              onClick={() => setShowLogin(true)}
+              className="w-full bg-orange-500 text-white font-black italic uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-orange-500/20 hover:bg-orange-400 active:scale-95 transition-all text-sm"
+            >
+              Fazer Login
+            </button>
+            <Link
+              href="/ingressar"
+              className="w-full bg-white/5 backdrop-blur-md text-white/70 border border-white/10 font-black italic uppercase tracking-widest py-4 rounded-2xl hover:bg-white/10 hover:text-white transition-all text-sm text-center shadow-lg"
+            >
+              Criar Conta
+            </Link>
+          </div>
+        ) : (
+          <form onSubmit={handleLogin} className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-2xl border border-white/10 flex flex-col gap-5 animate-in slide-in-from-bottom-4 duration-300">
+            <button
+              type="button"
+              onClick={() => setShowLogin(false)}
+              className="flex items-center gap-1 text-white/30 text-[10px] font-black uppercase tracking-widest hover:text-orange-500 transition-colors"
+            >
+              <ChevronLeft size={16} /> Voltar
+            </button>
+            
+            <div className="text-left mb-2">
+              <h2 className="text-xl font-black italic text-white uppercase leading-tight">Bem-vindo!</h2>
+              <p className="text-white/30 text-[9px] font-bold uppercase tracking-widest mt-1">Insira suas credenciais</p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <input
+                type="email"
+                placeholder="E-MAIL"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-5 py-4 bg-black/20 border border-white/10 rounded-2xl focus:border-orange-500 focus:outline-none text-white font-bold text-xs placeholder:text-white/20 transition-all shadow-inner"
+              />
+              
+              <div className="relative">
+                <input
+                  type={mostrarSenha ? 'text' : 'password'}
+                  placeholder="SENHA"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full px-5 py-4 pr-12 bg-black/20 border border-white/10 rounded-2xl focus:border-orange-500 focus:outline-none text-white font-bold text-xs placeholder:text-white/20 transition-all shadow-inner"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha(prev => !prev)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-orange-500 transition-colors"
+                >
+                  {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-orange-500 text-white font-black italic uppercase tracking-widest py-4 rounded-2xl hover:bg-orange-400 transition-all shadow-lg shadow-orange-500/20 active:scale-95 disabled:opacity-50 text-sm mt-2"
+            >
+              {loading ? 'Acessando...' : 'Entrar'}
+            </button>
+          </form>
+        )}
+      </div>
+
+      <footer className="mt-16 flex flex-col items-center gap-4 opacity-60 hover:opacity-100 transition-opacity">
+        <img 
+          src="/NOME.png" 
+          alt="VI INTERCE" 
+          className="w-32 h-auto object-contain drop-shadow-md" 
+        />
+      </footer>
+    </>
+  );
+}
+
+// P├ígina Principal
+export default function Home() {
+  const [showLogin, setShowLogin] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      toast('E-mail ou senha inv├ílidos', 'error');
+    } else if (data.user) {
+      const { data: profile } = await supabase.from('profiles').select('id').eq('id', data.user.id).single();
+      // ­ƒÆë CIRURGIA FEITA AQUI:
+      router.push(profile ? '/triagem' : '/perfil/criar');
+    }
+    setLoading(false);
+  };
+
+  const props = { showLogin, setShowLogin, email, setEmail, password, setPassword, loading, handleLogin };
+
+  return (
+    <div className="bg-[#0f051a] min-h-screen relative text-white">
+      {/* ­ƒÆë FUNDO GLOBAL OTIMIZADO */}
+      <div className="fixed inset-0 bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] z-0 pointer-events-none" style={{ transform: 'translateZ(0)' }} />
+
+      {/* ­ƒô▒ MOBILE (Conte├║do centralizado normal) */}
+      <main className="flex md:hidden min-h-screen flex-col items-center justify-center p-6 text-center relative z-10">
+        <LoginContent {...props} />
+      </main>
+
+      {/* ­ƒÆ╗ DESKTOP (Com a Logo Centralizada no Background) */}
+      <div className="hidden md:flex min-h-screen relative z-10">
+        
+        {/* ­ƒÆë LADO ESQUERDO: Ocupa o espa├ºo do fundo e centraliza o LOGO.png */}
+        <div className="flex-1 flex flex-col items-center justify-center p-20 animate-in fade-in zoom-in duration-1000">
+           <img 
+            src="/LOGO.png" 
+            alt="Logo Match Med" 
+            className="max-w-md lg:max-w-lg h-auto object-contain drop-shadow-[0_0_50px_rgba(234,88,12,0.2)]" 
+           />
+        </div>
+
+        {/* BARRA LATERAL COM O LOGIN (Liquid Glass) */}
+        <aside className="w-[450px] min-h-screen bg-white/[0.02] backdrop-blur-2xl border-l border-white/5 shadow-2xl flex flex-col items-center justify-center p-12 relative">
+          <LoginContent {...props} />
+        </aside>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="postcss.config.mjs">
 const config = {
   plugins: {
@@ -522,10 +931,329 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 }
 </file>
 
-<file path="app/components/Background.tsx">
+<file path="app/admin/page.tsx">
 'use client';
-export default function Background() {
-  return <></>;
+
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import { Lock, Trash2, AlertTriangle, ShieldCheck, RefreshCw, XCircle } from 'lucide-react';
+import { useToast } from '../components/Toast';
+import CachedImage from '../components/CachedImage'; // Usar o novo componente com fallback
+
+export default function AdminPage() {
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [autenticado, setAutenticado] = useState(false);
+  const [denunciados, setDenunciados] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dbError, setDbError] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const checarSessao = async () => {
+      // Auto-Login inteligente se já estiver logado
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        // Consulta no banco se a pessoa é admin
+        const { data: adminCheck } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+
+        if (adminCheck?.is_admin) {
+          setAutenticado(true);
+          carregarDenuncias(true); // O 'true' pula o setLoading local de denúncias
+          return;
+        }
+      }
+      
+      setLoading(false);
+    };
+    
+    checarSessao();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !senha) return;
+    
+    setLoading(true);
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: senha,
+    });
+
+    if (error) {
+      toast('Credenciais inválidas', 'error');
+      setLoading(false);
+      return;
+    }
+
+    // Trava forte consultando o banco
+    const { data: adminCheck } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', data.user.id)
+      .single();
+
+    if (!adminCheck?.is_admin) {
+      await supabase.auth.signOut(); // Desloga do aparelho imediatamente
+      toast('Acesso negado: Conta sem privilégios', 'error');
+      setLoading(false);
+      return;
+    }
+
+    setAutenticado(true);
+    carregarDenuncias();
+  };
+
+  const carregarDenuncias = async (isAuto = false) => {
+    if (!isAuto) setLoading(true);
+    setDbError(false);
+    try {
+      // 1. Busca todas as denúncias
+      const { data: reports, error: reportsError } = await supabase.from('reports').select('*');
+      
+      if (reportsError) {
+        if (reportsError.code === '42P01') {
+          // Tabela não existe
+          setDbError(true);
+        } else {
+          toast('Erro ao buscar denúncias', 'error');
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (!reports || reports.length === 0) {
+        setDenunciados([]);
+        setLoading(false);
+        return;
+      }
+
+      // Conta quantas denúncias cada um tem
+      const contagem: Record<string, number> = {};
+      reports.forEach(r => {
+        contagem[r.reported_id] = (contagem[r.reported_id] || 0) + 1;
+      });
+
+      const reportedIds = Object.keys(contagem);
+
+      // 2. Busca os perfis que foram denunciados
+      const { data: perfis, error: perfisError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', reportedIds);
+
+      if (perfisError) {
+        toast('Erro ao buscar perfis', 'error');
+        setLoading(false);
+        return;
+      }
+
+      // 3. Monta a lista rankeada
+      const lista = (perfis || []).map(p => ({
+        ...p,
+        total_denuncias: contagem[p.id]
+      })).sort((a, b) => b.total_denuncias - a.total_denuncias);
+
+      setDenunciados(lista);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const listShadowBan = async (id: string, nome: string) => {
+    if (!confirm(`TEM CERTEZA? Ativar o modo de invisibilidade. Ela poderá dar Like/X para sempre num limbo digital, mas não verá mais ninguém.`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Chama a função secreta (RPC) no banco para pular a trava de segurança (RLS) invisível
+      const { error: banError } = await supabase.rpc('aplicar_shadow_ban', { usuario_id: id });
+      
+      if (banError) throw banError;
+
+      // Apaga as denúncias referentes a ele para limpar seu painel de adm
+      await supabase.from('reports').delete().eq('reported_id', id);
+
+      toast('Fantasma criado! Perfil neutralizado e limpo do radar.', 'success');
+      carregarDenuncias();
+    } catch (err) {
+      console.error(err);
+      toast('Erro ao neutralizar o alvo.', 'error');
+      setLoading(false);
+    }
+  };
+
+  const perdoarPerfil = async (id: string, nome: string) => {
+    if (!confirm(`Deseja descartar todas as denúncias de "${nome}" e mantê-lo no app?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Apaga apenas as denúncias
+      const { error } = await supabase.from('reports').delete().eq('reported_id', id);
+      if (error) throw error;
+
+      toast('Denúncias perdoadas com sucesso!', 'success');
+      carregarDenuncias();
+    } catch (err) {
+      console.error(err);
+      toast('Erro ao limpar denúncias', 'error');
+      setLoading(false);
+    }
+  };
+
+  if (!autenticado) {
+    return (
+      <div className="min-h-screen bg-[#090310] flex flex-col items-center justify-center p-6 bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat bg-blend-overlay">
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-0"></div>
+        {loading ? (
+          <div className="relative z-10 flex flex-col items-center justify-center">
+            <RefreshCw className="animate-spin text-red-500 mb-4" size={32} />
+            <p className="font-black uppercase text-[10px] tracking-widest text-red-500">Verificando Credenciais...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleLogin} className="relative z-10 w-full max-w-sm bg-black/50 backdrop-blur-2xl p-10 rounded-[3rem] border border-white/10 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-500">
+            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/20 mb-6 ring-4 ring-red-500/5">
+              <Lock className="text-red-500" size={28} />
+            </div>
+            <h1 className="text-2xl font-black italic text-white uppercase tracking-widest mb-1">Acesso Restrito</h1>
+            <p className="text-white/30 text-[10px] uppercase font-bold tracking-widest mb-8">Painel do Administrador</p>
+            
+            <input
+              type="email"
+              placeholder="E-MAIL MESTRE"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-5 py-4 bg-black/40 border border-white/10 rounded-2xl focus:border-red-500 focus:outline-none text-white font-bold text-center tracking-widest mb-3"
+              disabled={loading}
+            />
+
+            <input
+              type="password"
+              placeholder="SENHA OFICIAL"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              className="w-full px-5 py-4 bg-black/40 border border-white/10 rounded-2xl focus:border-red-500 focus:outline-none text-white font-bold text-center tracking-[0.2em] mb-6"
+              disabled={loading}
+            />
+
+            <button disabled={loading} type="submit" className="flex items-center justify-center gap-2 w-full bg-red-600 text-white font-black italic uppercase tracking-widest py-4 rounded-2xl hover:bg-red-500 transition-all text-sm shadow-[0_0_20px_rgba(220,38,38,0.3)] hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+              {loading ? <RefreshCw className="animate-spin" size={18} /> : 'Acessar Sistema'}
+            </button>
+          </form>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#090310] relative text-white pt-8 pb-32 px-4 selection:bg-red-500/30">
+      <div className="absolute inset-0 bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.02] z-0 pointer-events-none fixed" />
+      
+      <div className="max-w-4xl mx-auto relative z-10">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-12 bg-white/5 backdrop-blur-md border border-white/5 p-6 rounded-3xl">
+          <div className="flex items-center gap-4">
+            <div className="bg-red-500 p-3 rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+              <ShieldCheck size={28} className="text-white font-black" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black italic uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-500">
+                Central de Denúncias
+              </h1>
+              <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mt-1">Inter-Match • Operações de Risco</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => carregarDenuncias()}
+            disabled={loading}
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-white/70 px-5 py-3 rounded-full text-[10px] uppercase font-black tracking-widest border border-white/10"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            Recarregar Dados
+          </button>
+        </div>
+
+        {dbError ? (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-3xl p-8 text-center flex flex-col items-center">
+            <AlertTriangle className="text-red-500 mb-4" size={48} />
+            <h2 className="text-xl font-black uppercase text-white mb-2">Tabela não encontrada</h2>
+            <p className="text-white/60 text-sm max-w-lg mb-6">
+              Para que as denúncias funcionem, você precisa rodar aquele script SQL no painel de administração da Supabase construindo a tabela 'reports'.
+            </p>
+          </div>
+        ) : loading ? (
+          <div className="flex flex-col items-center justify-center p-20 opacity-50">
+            <RefreshCw className="animate-spin text-red-500 mb-4" size={32} />
+            <p className="font-black uppercase text-[10px] tracking-widest text-red-500">Analisando Banco de Dados...</p>
+          </div>
+        ) : denunciados.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-20 bg-white/5 rounded-[3rem] border border-white/5 opacity-70">
+            <div className="text-5xl mb-6">🕊️</div>
+            <h2 className="text-xl font-black italic text-white uppercase tracking-wider">A Paz Reina</h2>
+            <p className="text-white/40 text-xs font-bold uppercase tracking-widest mt-2 text-center max-w-sm">
+              Nenhuma denúncia registrada até o momento no evento.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {denunciados.map((p) => (
+              <div key={p.id} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-[2rem] p-4 flex flex-col sm:flex-row items-center gap-6 hover:bg-white/10 transition-colors">
+                
+                <div className="w-24 h-24 sm:w-20 sm:h-20 shrink-0 bg-zinc-900 rounded-2xl overflow-hidden relative border border-white/10">
+                  {p.foto_url ? (
+                     <CachedImage src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-black">X</div>
+                  )}
+                  <div className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-bl-xl shadow-md border-l border-b border-red-400">
+                    {p.total_denuncias}
+                  </div>
+                </div>
+
+                <div className="flex-1 text-center sm:text-left min-w-0">
+                  <h3 className="text-lg font-black italic uppercase text-white truncate">{p.nome}, {p.idade}</h3>
+                  <p className="text-orange-400 text-[10px] font-black uppercase tracking-widest truncate mt-0.5">
+                    {p.curso || 'CURSO NÃO INFORMADO'}
+                  </p>
+                  <p className="text-white/40 text-[9px] font-bold mt-2 uppercase">
+                    ID: <span className="font-mono">{p.id.split('-')[0]}...</span>
+                  </p>
+                </div>
+
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <button 
+                    onClick={() => perdoarPerfil(p.id, p.nome)}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white px-5 py-4 sm:py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-white/10 transition-all active:scale-95"
+                  >
+                    <XCircle size={14} /> Perdoar
+                  </button>
+                  <button 
+                    onClick={() => listShadowBan(p.id, p.nome)}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 px-5 py-4 sm:py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-red-500/30 transition-all active:scale-95 shadow-[0_0_15px_rgba(239,68,68,0.1)] hover:shadow-[0_0_30px_rgba(239,68,68,0.4)]"
+                  >
+                    <Trash2 size={14} /> Shadow Ban
+                  </button>
+                </div>
+
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 </file>
 
@@ -663,33 +1391,6 @@ export default nextConfig;
     "tailwindcss": "^4",
     "typescript": "^5"
   }
-}
-</file>
-
-<file path="app/globals.css">
-@import "tailwindcss";
-
-@layer base {
-  html, body {
-    background-color: transparent !important;
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    width: 100vw;
-    overscroll-behavior: none;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  #__next, [data-nextjs-scroll-focus-boundary] {
-    height: 100%;
-    width: 100%;
-  }
-}
-
-:focus {
-  outline: none;
 }
 </file>
 
@@ -842,6 +1543,38 @@ export default function Catraca({ children }: { children: React.ReactNode }) {
 }
 </file>
 
+<file path="app/globals.css">
+@import "tailwindcss";
+
+@layer base {
+
+  html,
+  body {
+    background-color: #0f051a;
+    color: white;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    min-height: 100dvh;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #__next,
+  [data-nextjs-scroll-focus-boundary] {
+    height: 100%;
+    width: 100%;
+  }
+}
+
+:focus {
+  outline: none;
+}
+</file>
+
 <file path="app/ingressar/page.tsx">
 'use client';
 
@@ -850,6 +1583,7 @@ import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Flame, ChevronLeft, Eye, EyeOff, AtSign, FileText } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import TermosDeUso from '../components/TermosDeUso';
 
 export default function Registro() {
   const [email, setEmail] = useState('');
@@ -896,7 +1630,7 @@ export default function Registro() {
     });
 
     if (error) {
-      alert('Erro ao cadastrar: ' + error.message);
+      toast('Erro: ' + error.message, 'error');
     } else if (data.user) {
       // Já aproveita e injeta o Instagram do cara na ficha (upsert)
       await supabase.from('profiles').upsert({
@@ -1071,42 +1805,7 @@ export default function Registro() {
             </div>
 
             <div className="overflow-y-auto px-8 py-6 text-[11px] text-white/50 leading-relaxed space-y-5 flex-1">
-              <p className="text-white/70 text-xs font-medium">Bem-vindo ao Inter-Match! Antes de criar sua conta e começar a usar o aplicativo, é obrigatório que você leia e concorde com as regras abaixo.</p>
-
-              <div>
-                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">1. Natureza do Aplicativo</p>
-                <p>O Inter-Match é uma iniciativa 100% recreativa e sem fins lucrativos, criada exclusivamente para promover a interação entre os participantes da festa do InterCE, organizada pela Alcateia. O aplicativo não possui vínculo comercial e não garante encontros ou qualquer tipo de resultado no mundo real.</p>
-              </div>
-
-              <div>
-                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">2. Declaração de Maioridade</p>
-                <p>Ao se cadastrar, você declara expressamente ter 18 (dezoito) anos de idade completos ou mais. O uso deste aplicativo por menores de idade é estritamente proibido.</p>
-              </div>
-
-              <div>
-                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">3. Direitos de Imagem e Conteúdo</p>
-                <p>Ao enviar uma foto para o banco de dados, você concede permissão para que sua imagem seja exibida dentro do app, declara ser autor ou possuir os direitos de uso, e assume total responsabilidade pelo conteúdo enviado.</p>
-              </div>
-
-              <div>
-                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">4. Conduta do Usuário</p>
-                <p>É terminantemente proibido: criação de perfis falsos, envio de nudez explícita ou violência, e qualquer tipo de discurso de ódio, assédio, racismo, homofobia ou ofensa. Perfis infratores serão excluídos sem aviso prévio.</p>
-              </div>
-
-              <div>
-                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">5. Isenção de Responsabilidade e Independência</p>
-                <p>O app é fornecido &quot;no estado em que se encontra&quot;, sem garantias. O Inter-Match é independente — o evento InterCE, a empresa SOMOS, e os patrocinadores Medway e Nymu não possuem qualquer vínculo com este aplicativo e estão isentos de responsabilidade.</p>
-              </div>
-
-              <div>
-                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">6. Proteção de Dados</p>
-                <p>Os dados coletados serão utilizados única e exclusivamente para o funcionamento do aplicativo durante o período relacionado ao evento do InterCE.</p>
-              </div>
-
-              <div>
-                <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">7. Foro</p>
-                <p>Estes termos são regidos pelas leis brasileiras. Para dirimir quaisquer controvérsias, fica eleito o foro da Comarca de Sobral - CE.</p>
-              </div>
+              <TermosDeUso />
             </div>
 
             <div className="px-8 py-5 border-t border-white/5">
@@ -1128,13 +1827,13 @@ export default function Registro() {
 <file path="app/components/Navbar.tsx">
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { Flame, Heart, User } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { createCache } from '../../lib/cache';
 
-const matchCountCache = createCache<number>('match-count', 30_000);
+const matchCountCache = createCache<number>('match-count', 120_000); // 120 segundos
 
 type LucideIconType = React.ComponentType<{
   size?: string | number;
@@ -1222,8 +1921,18 @@ function NavItem({
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [matchCount, setMatchCount] = useState(0);
   const userRef = useRef<string | null>(null);
+
+  // Escolta de Segurança: Impede fuga da tela de Redefinição via URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (sessionStorage.getItem('lock_to_redefinir') === 'true' && pathname !== '/redefinir') {
+        router.push('/redefinir');
+      }
+    }
+  }, [pathname, router]);
 
   const fetchMatchCount = async () => {
     try {
@@ -1232,21 +1941,12 @@ export default function Navbar() {
       if (!user) return;
       userRef.current = user.id;
 
-      const { data: meusLikes } = await supabase
-        .from('likes').select('receiver_id')
-        .eq('sender_id', user.id).eq('liked', true);
-
-      const { data: likesRecebidos } = await supabase
-        .from('likes').select('sender_id')
-        .eq('receiver_id', user.id).eq('liked', true);
-
-      if (meusLikes && likesRecebidos) {
-        const idsMeusLikes = meusLikes.map(l => l.receiver_id);
-        const idsLikesRecebidos = likesRecebidos.map(l => l.sender_id);
-        const count = idsMeusLikes.filter(id => idsLikesRecebidos.includes(id)).length;
-        matchCountCache.set(count);
-        setMatchCount(count);
-      }
+      // CIRURGIA APLICADA: Chama apenas a RPC e conta os resultados, sem selects duplos
+      const { data } = await supabase.rpc('get_matches_mutuos', { p_user_id: user.id });
+      const count = (data as unknown[])?.length ?? 0;
+      
+      matchCountCache.set(count);
+      setMatchCount(count);
     } catch {
       // silencioso — badge não é crítico
     }
@@ -1258,41 +1958,24 @@ export default function Navbar() {
     fetchMatchCount();
   }, [pathname]);
 
-  // Supabase Realtime: escuta MUDANÇAS (agora super otimizado e seguro)
+ // Polling inteligente: substitui o Realtime para poupar conexões do Supabase
   useEffect(() => {
-    const rotasSemNavbar = ['/', '/ingressar'];
+    const rotasSemNavbar = ['/', '/ingressar', '/redefinir'];
     if (rotasSemNavbar.includes(pathname)) return;
 
-    let channel: ReturnType<typeof supabase.channel>;
+    // Busca inicial ao montar a navbar
+    fetchMatchCount();
 
-    const setupRealtime = async () => {
-      // 1. Pega a sessão para sabermos o ID do usuário local
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+    // Configura o polling a cada 60 segundos (60000 ms)
+    const intervalId = setInterval(() => {
+      // Só faz a requisição se a tela do celular estiver ligada e no app
+      if (document.visibilityState === 'visible') {
+        matchCountCache.invalidate(); // Invalida o cache pra forçar a busca nova
+        fetchMatchCount();
+      }
+    }, 60000);
 
-      // 2. Abre o canal APENAS para INSERTs onde ele é o "receiver_id"
-      channel = supabase
-        .channel('match-count')
-        .on(
-          'postgres_changes',
-          { 
-            event: 'INSERT', 
-            schema: 'public', 
-            table: 'likes',
-            filter: `receiver_id=eq.${session.user.id}` // 👈 MÁGICA DE PROTEÇÃO AQUI
-          },
-          () => {
-            // Só roda isso se ALGUÉM der like NELE
-            matchCountCache.invalidate();
-            fetchMatchCount();
-          }
-        )
-        .subscribe();
-    };
-
-    setupRealtime();
-
-    // Também escuta evento global de match criado (ex: quando ele próprio dá like)
+    // Escuta evento global de match criado (ex: quando ele próprio dá like)
     const onMatchCreated = () => {
       matchCountCache.invalidate();
       fetchMatchCount();
@@ -1300,13 +1983,13 @@ export default function Navbar() {
     window.addEventListener('match-created', onMatchCreated);
 
     return () => {
-      // Remove o canal de forma segura caso o componente seja desmontado
-      if (channel) supabase.removeChannel(channel);
+      // Limpa a repetição e o evento ao sair do componente
+      clearInterval(intervalId);
       window.removeEventListener('match-created', onMatchCreated);
     };
   }, [pathname]);
 
-  const rotasSemNavbar = ['/', '/ingressar', '/perfil/editar'];
+  const rotasSemNavbar = ['/', '/ingressar', '/perfil/editar', '/redefinir'];
   if (rotasSemNavbar.includes(pathname)) return null;
 
   return (
@@ -1346,6 +2029,64 @@ export default function Navbar() {
 }
 </file>
 
+<file path="app/layout.tsx">
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import Navbar from "./components/Navbar";
+import Catraca from "./components/Catraca";
+
+import { ToastProvider } from "./components/Toast"; 
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Inter Match",
+  description: "Match da InterCE",
+};
+
+// ✅ Viewport separado do metadata (padrão Next.js 14+)
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1, // impede zoom automático no iOS
+  userScalable: false,
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html
+      lang="pt-br"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable}`}
+    >
+      <body className="min-h-[100dvh] overflow-x-hidden antialiased flex flex-col relative bg-transparent">
+        <ToastProvider>
+          <Catraca>
+            <main className="flex-1 w-full relative z-10 bg-transparent">
+              {children}
+            </main>
+            <Navbar />
+          </Catraca>
+        </ToastProvider>
+      </body>
+    </html>
+  );
+}
+</file>
+
 <file path="app/perfil/criar/page.tsx">
 'use client';
 
@@ -1354,46 +2095,12 @@ import { supabase } from '../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, ArrowRight, Loader2, AtSign, Check, ChevronDown, Shield, FileText, AlertTriangle } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
+import TermosDeUso from '../../components/TermosDeUso';
 
-// Importe o helper no topo do arquivo
-import { otimizarUrlCloudinary } from '../../../lib/cloudinary';
+// CIRURGIA APLICADA: Importando a constante CLOUDINARY_URL
+import { otimizarUrlCloudinary, CLOUDINARY_URL } from '../../../lib/cloudinary';
 
-// ─── DADOS DAS ATLÉTICAS ───────────────────────────────────────────────────────
-const ATLETICAS = {
-  '1ª Divisão': [
-    { nome: 'Alcateia',     curso: 'Medicina', instituicao: 'UFC Sobral' },
-    { nome: 'Audácia',      curso: 'Medicina', instituicao: 'Unichristus' },
-    { nome: 'Espartana',    curso: 'Medicina', instituicao: 'IDOMED Juazeiro' },
-    { nome: 'Fulminante',   curso: 'Medicina', instituicao: 'UECE' },
-    { nome: 'Ira',          curso: 'Medicina', instituicao: 'UNINTA Sobral' },
-    { nome: 'Kariris',      curso: 'Medicina', instituicao: 'UFCA Barbalha' },
-    { nome: 'Selvagem',     curso: 'Medicina', instituicao: 'UFC Fortaleza' },
-    { nome: 'Tenebrosa',    curso: 'Medicina', instituicao: 'UNIFOR' },
-  ],
-  '2ª Divisão': [
-    { nome: 'Invocada',     curso: 'Medicina', instituicao: 'IDOMED Quixadá' },
-    { nome: 'Caçadora',     curso: 'Medicina', instituicao: 'UECE Crateús' },
-    { nome: 'Perversa',     curso: 'Medicina', instituicao: 'UNINTA Itapipoca' },
-    { nome: 'Aniquiladora', curso: 'Medicina', instituicao: 'IDOMED Iguatu' },
-  ],
-  'Convidadas': [
-    { nome: 'Voraz',         curso: 'Medicina', instituicao: 'F5 Sobral' },
-    { nome: 'Tirana',        curso: 'Medicina', instituicao: 'UECE Quixeramobim' },
-    { nome: 'Exterminadora', curso: 'Medicina', instituicao: 'URCA Cariri' },
-  ],
-} as const;
-
-const TODAS_ATLETICAS = Object.values(ATLETICAS).flat();
-
-const CARGOS = [
-  'Presidente',
-  'Diretor',
-  'Organizador',
-  'Técnico',
-  'Esportista / Jogador',
-  'Egresso',
-  'Acadêmico',
-];
+import { ATLETICAS, TODAS_ATLETICAS, CARGOS } from '../../../lib/constants';
 
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
 type TipoParticipante = 'atletica' | 'convidado' | null;
@@ -1524,45 +2231,7 @@ function StepTermos({ f, set }: { f: OnboardingData; set: (k: keyof OnboardingDa
       </div>
 
       <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 text-xs text-white/50 leading-relaxed space-y-4 max-h-[400px] overflow-y-auto">
-        <div>
-          <p className="text-white font-bold text-[11px] uppercase tracking-wider mb-1">Bem-vindo ao Inter-Match!</p>
-          <p>Antes de criar sua conta e começar a usar o aplicativo, é obrigatório que você leia e concorde com as regras abaixo. Ao clicar em {"\""}Aceitar{"\""}, você confirma que compreendeu e concorda com todas as condições descritas.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">1. Natureza do Aplicativo</p>
-          <p>O Inter-Match é uma iniciativa 100% recreativa e sem fins lucrativos, criada exclusivamente para promover a interação entre os participantes da festa do InterCE, organizada pela Alcateia. O aplicativo não possui vínculo comercial e não garante encontros ou qualquer tipo de resultado no mundo real.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">2. Declaração de Maioridade</p>
-          <p>Ao se cadastrar, você declara expressamente ter 18 (dezoito) anos de idade completos ou mais. O uso deste aplicativo por menores de idade é estritamente proibido. Caso seja identificada a presença de menores, a conta será imediatamente banida.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">3. Direitos de Imagem e Conteúdo</p>
-          <p>Ao enviar uma foto para o nosso banco de dados, você concede permissão para que sua imagem seja exibida para outros usuários dentro do aplicativo. Você declara que a imagem enviada é de sua própria autoria ou que possui os direitos de uso sobre ela, e assume total responsabilidade pelo conteúdo da foto enviada.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">4. Conduta do Usuário e Proibições</p>
-          <p>É terminantemente proibido: criação de perfis falsos ou uso de fotos de outras pessoas sem autorização; envio de imagens contendo nudez explícita, violência ou material impróprio; qualquer tipo de discurso de ódio, assédio, racismo, homofobia ou ofensa a outros usuários. Perfis que violarem essas regras serão imediatamente excluídos sem aviso prévio.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">5. Isenção de Responsabilidade</p>
-          <p>O aplicativo é fornecido {"\""}no estado em que se encontra{"\""}, sem garantias de funcionamento ininterrupto. O Inter-Match é uma iniciativa estritamente independente — o evento InterCE, a empresa SOMOS, e os patrocinadores Medway e Nymu não possuem qualquer vínculo legal, administrativo, financeiro ou de desenvolvimento com este aplicativo.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">6. Proteção de Dados (Privacidade)</p>
-          <p>Os dados coletados (nome, foto, informações de perfil) serão utilizados única e exclusivamente para o funcionamento do aplicativo durante o período relacionado ao evento do InterCE.</p>
-        </div>
-
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-orange-400 font-black text-[10px] uppercase tracking-wider mb-1">7. Disposições Gerais e Foro</p>
-          <p>Estes termos são regidos pelas leis brasileiras. Para dirimir quaisquer controvérsias decorrentes do uso do aplicativo, fica eleito o foro da Comarca de Sobral - CE.</p>
-        </div>
+        <TermosDeUso />
       </div>
 
       <label className="flex items-start gap-4 cursor-pointer group bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/20 rounded-xl px-5 py-4 transition-all mt-2">
@@ -1799,7 +2468,7 @@ function StepPerfil({ f, set, onUpload, uploading, fileInputRef }: {
             <Field label="Orientação">
               <div className="relative">
                 <select className={selectCls} value={f.orientacao} onChange={(e) => set('orientacao', e.target.value)}>
-                  <option value="Hétero">Hétero</option><option value="Bi">Bi</option><option value="Gay">Gay</option>
+                  <option value="Hétero">Hétero</option><option value="Lésbica">Lésbica</option><option value="Bi">Bi</option><option value="Gay">Gay</option><option value="Pan">Pan</option>
                 </select>
                 <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
               </div>
@@ -1851,7 +2520,7 @@ function StepPerfil({ f, set, onUpload, uploading, fileInputRef }: {
         </button>
       </Section>
 
-      <Section title="Radar de Plantão">
+      <Section title="Quem você quer ver? 👀">
         <div className="flex gap-2">
           {[{ key: 'ver_homem', label: 'Homens', sym: '♂' }, { key: 'ver_mulher', label: 'Mulheres', sym: '♀' }, { key: 'ver_nb', label: 'NB', sym: '⚧' }].map(({ key, label, sym }) => {
             const active = f[key as keyof OnboardingData] as boolean;
@@ -1968,10 +2637,8 @@ export default function CriarPerfil() {
       formData.append('file', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
       formData.append('upload_preset', 'intermatch_fotos');
 
-      const cloudName = 'dcsiucytm';
-      const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-
-      const response = await fetch(url, {
+      // CIRURGIA APLICADA: Utilizando CLOUDINARY_URL diretamente no fetch
+      const response = await fetch(CLOUDINARY_URL, {
         method: 'POST',
         body: formData,
       });
@@ -1981,9 +2648,8 @@ export default function CriarPerfil() {
       }
 
       const data = await response.json();
-      
-      // <--- AQUI A SUA MÁGICA FOI APLICADA --->
-      const urlOtimizada = otimizarUrlCloudinary(data.secure_url); 
+
+      const urlOtimizada = otimizarUrlCloudinary(data.secure_url);
 
       set('foto_url', urlOtimizada);
 
@@ -2031,7 +2697,7 @@ export default function CriarPerfil() {
         setSaved(true);
         // Limpar cache da Catraca pra ela saber que o perfil está completo
         // @ts-ignore - Catraca usa módulo global, acessível via import
-        try { window.dispatchEvent(new CustomEvent('profile-created')); } catch {}
+        try { window.dispatchEvent(new CustomEvent('profile-created')); } catch { }
         setTimeout(() => router.push('/triagem'), 800);
       }
     }
@@ -2125,65 +2791,6 @@ export default function CriarPerfil() {
         </div>
       )}
     </>
-  );
-}
-</file>
-
-<file path="app/layout.tsx">
-import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import Navbar from "./components/Navbar";
-import Catraca from "./components/Catraca";
-import Background from "./components/Background";
-import { ToastProvider } from "./components/Toast"; 
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata: Metadata = {
-  title: "Inter Match",
-  description: "Match da InterCE",
-};
-
-// ✅ Viewport separado do metadata (padrão Next.js 14+)
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1, // impede zoom automático no iOS
-  userScalable: false,
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html
-      lang="pt-br"
-      suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable}`}
-    >
-      <body className="min-h-screen antialiased flex flex-col relative bg-transparent">
-        <ToastProvider>
-          <Catraca>
-            <Background />
-            <main className="flex-1 w-full relative z-10 bg-transparent">
-              {children}
-            </main>
-            <Navbar />
-          </Catraca>
-        </ToastProvider>
-      </body>
-    </html>
   );
 }
 </file>
@@ -2540,7 +3147,7 @@ function MatchesContent() {
 
       // 2. Cria a escuta apenas para novos likes (INSERT) direcionados a ele (receiver_id)
       channel = supabase
-        .channel('match-list')
+        .channel(`match-list-${Date.now()}`)
         .on(
           'postgres_changes',
           { 
@@ -2605,28 +3212,37 @@ function MatchesContent() {
           </div>
         ) : matches.length > 0 ? (
           <div className="w-full max-w-sm flex flex-col gap-3">
-            {matches.map((match) => (
+            {matches.map((match) => {
+              const isAlcateia = match.atletica?.trim().toUpperCase().replace('É', 'E') === 'ALCATEIA';
+              return (
               <div
                 key={match.id}
                 onClick={() => setSelectedMatch(match)}
-                className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.08]  p-3 rounded-[1.5rem] shadow-lg border border-white/5 active:scale-[0.98] transition-all group cursor-pointer"
+                className={`flex items-center gap-3 p-3 rounded-[1.5rem] shadow-lg active:scale-[0.98] transition-all group cursor-pointer relative overflow-hidden ${isAlcateia ? 'bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30' : 'bg-white/[0.03] hover:bg-white/[0.08] border border-white/5'}`}
               >
-                <div className="relative w-14 h-14 shrink-0 rounded-2xl overflow-hidden border border-white/10 group-hover:border-orange-500/50 transition-colors bg-zinc-900">
+                {isAlcateia && (
+                  <div className="absolute top-1/2 -translate-y-1/2 right-8 z-0">
+                    <img src="/alcateia.png" alt="Selo" className="w-12 h-12 object-contain drop-shadow-[0_4px_4px_rgba(0,0,0,0.6)]" />
+                  </div>
+                )}
+                <div className={`relative w-14 h-14 shrink-0 rounded-2xl overflow-hidden border transition-colors bg-zinc-900 z-10 ${isAlcateia ? 'border-orange-500/50' : 'border-white/10 group-hover:border-orange-500/50'}`}>
                   {match.foto_url ? (
                     <CachedImage src={match.foto_url} alt={match.nome} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-white/10"><User size={20} /></div>
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-black text-white text-base leading-tight uppercase italic truncate">{match.nome}, {match.idade}</h3>
-                  <p className="text-white/40 text-[9px] font-black uppercase truncate tracking-wider mt-0.5">
+                <div className="flex-1 min-w-0 z-10">
+                  <h3 className="font-black text-white text-base leading-tight uppercase italic truncate">
+                    {match.nome}, {match.idade}
+                  </h3>
+                  <p className={`${isAlcateia ? "text-orange-400/80" : "text-white/40"} text-[9px] font-black uppercase truncate tracking-wider mt-0.5`}>
                     {match.atletica || 'Convidado'}
                   </p>
                 </div>
-                <ChevronRight className="text-white/10 group-hover:text-orange-500 transition-colors" size={20} />
+                <ChevronRight className={`${isAlcateia ? "text-orange-500" : "text-white/10 group-hover:text-orange-500"} transition-colors z-10`} size={20} />
               </div>
-            ))}
+            )})}
             <div className="h-10 w-full pointer-events-none" />
           </div>
         ) : (
@@ -2659,11 +3275,20 @@ function MatchesContent() {
                 position: 'relative',
               }}
             >
+              {(() => {
+                const isAlcateia = selectedMatch.atletica?.trim().toUpperCase().replace('É', 'E') === 'ALCATEIA';
+                return (
+                  <>
               {/* ── FRENTE DO CARD ── */}
               <div
-                className="w-full aspect-[4/5] bg-[#1a1a1a] rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden border border-white/10 relative flex flex-col"
-                style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+                className={`w-full aspect-[4/5] bg-[#1a1a1a] rounded-[2.5rem] overflow-hidden border relative flex flex-col ${isAlcateia ? 'border-orange-500/50 shadow-[0_0_50px_rgba(249,115,22,0.3)] ring-1 ring-orange-500/20' : 'border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)]'}`}
+                style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'translateZ(0)' }}
               >
+                  {isAlcateia && (
+                    <div className="absolute top-4 left-4 z-50">
+                      <img src="/alcateia.png" alt="Selo Alcateia" className="w-16 h-16 object-contain drop-shadow-[0_4px_4px_rgba(0,0,0,0.6)]" />
+                    </div>
+                  )}
                 <div className="absolute inset-0 z-0">
                   {selectedMatch.foto_url ? (
                     <CachedImage src={selectedMatch.foto_url} alt={selectedMatch.nome} className="w-full h-full object-cover absolute inset-0" />
@@ -2674,7 +3299,7 @@ function MatchesContent() {
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent z-10 pointer-events-none" />
 
-                <div className="absolute top-5 left-5 z-30 bg-black/80  border border-white/20 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-2xl transition-all">
+                <div className={`absolute top-5 z-30 bg-black/80 border border-white/20 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-2xl transition-all ${isAlcateia ? 'left-1/2 -translate-x-1/2' : 'left-5'}`}>
                   <RotateCcw size={10} className="text-orange-500" />
                   <span className="text-[8px] font-black uppercase tracking-widest text-white">Ver mais</span>
                 </div>
@@ -2688,8 +3313,10 @@ function MatchesContent() {
 
                 <div className="absolute bottom-0 left-0 right-0 z-20 p-6 flex flex-col gap-4">
                   <div className="flex flex-col gap-0.5">
-                    <h2 className="text-2xl font-black italic text-white uppercase tracking-tight drop-shadow-md">
-                      {selectedMatch.nome}, {selectedMatch.idade}
+                    <h2 className="text-2xl font-black italic uppercase tracking-tight flex items-center gap-2">
+                      <span className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                        {selectedMatch.nome}, {selectedMatch.idade}
+                      </span>
                     </h2>
                     <p className="text-orange-500 font-black text-[10px] uppercase tracking-widest drop-shadow-sm">
                       {selectedMatch.atletica || 'Convidado'}
@@ -2716,22 +3343,30 @@ function MatchesContent() {
 
               {/* ── VERSO DO CARD ── */}
               <div
-                className="absolute inset-0 w-full aspect-[4/5] bg-[#0f051a]  rounded-[2.5rem] shadow-2xl border border-white/10 flex flex-col overflow-hidden"
+                className={`absolute inset-0 w-full aspect-[4/5] bg-[#0f051a] rounded-[2.5rem] shadow-2xl border flex flex-col overflow-hidden ${isAlcateia ? 'border-orange-500/50 ring-1 ring-orange-500/20' : 'border-white/10'}`}
                 style={{
                   backfaceVisibility: 'hidden',
                   WebkitBackfaceVisibility: 'hidden',
                   transform: 'rotateY(180deg)',
                 }}
               >
-                <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-white/5">
+                  {isAlcateia && (
+                    <div className="absolute bottom-6 right-6 z-50">
+                      <img src="/alcateia.png" alt="Selo Alcateia" className="w-14 h-14 object-contain drop-shadow-[0_4px_4px_rgba(0,0,0,0.6)]" />
+                    </div>
+                  )}
+
+                <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-white/5 relative z-10">
                   <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-zinc-900">
                     {selectedMatch.foto_url
                       ? <CachedImage src={selectedMatch.foto_url} alt={selectedMatch.nome} className="w-full h-full object-cover" />
                       : <div className="w-full h-full flex items-center justify-center text-white/10"><User size={20} /></div>
                     }
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-black italic uppercase text-lg leading-none truncate">{selectedMatch.nome}, {selectedMatch.idade}</h3>
+                  <div className="flex-1 min-w-0 pr-8">
+                    <h3 className="font-black italic uppercase text-lg leading-none truncate text-white">
+                      {selectedMatch.nome}, {selectedMatch.idade}
+                    </h3>
                     <p className="text-orange-500 text-[8px] font-black uppercase tracking-[0.2em] mt-1">Ficha do Participante</p>
                   </div>
                 </div>
@@ -2773,6 +3408,9 @@ function MatchesContent() {
                   </div>
                 </div>
               </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -2841,7 +3479,7 @@ function LoginContent({
 
       <div className="w-full max-w-xs transition-all duration-300">
         {!showLogin ? (
-          <div className="flex flex-col gap-4 animate-in fade-in zoom-in duration-500">
+          <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-2xl border border-white/10 flex flex-col gap-4 animate-in fade-in zoom-in duration-500">
             <button
               onClick={() => setShowLogin(true)}
               className="w-full bg-orange-500 text-white font-black italic uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-orange-500/20 hover:bg-orange-400 active:scale-95 transition-all text-sm"
@@ -2864,7 +3502,7 @@ function LoginContent({
             >
               <ChevronLeft size={16} /> Voltar
             </button>
-            
+
             <div className="text-left mb-2">
               <h2 className="text-xl font-black italic text-white uppercase leading-tight">Bem-vindo!</h2>
               <p className="text-white/30 text-[9px] font-bold uppercase tracking-widest mt-1">Insira suas credenciais</p>
@@ -2879,7 +3517,7 @@ function LoginContent({
                 required
                 className="w-full px-5 py-4 bg-black/20 border border-white/10 rounded-2xl focus:border-orange-500 focus:outline-none text-white font-bold text-xs placeholder:text-white/20 transition-all shadow-inner"
               />
-              
+
               <div className="relative">
                 <input
                   type={mostrarSenha ? 'text' : 'password'}
@@ -2906,15 +3544,24 @@ function LoginContent({
             >
               {loading ? 'Acessando...' : 'Entrar'}
             </button>
+
+            <a
+              href={`https://wa.me/5588992047393?text=${encodeURIComponent(`Oi, esqueci a senha do meu InterMatch. Meu e-mail é: ${email || '___'}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full text-center text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-white/60 transition-colors mt-2"
+            >
+              Esqueci a senha
+            </a>
           </form>
         )}
       </div>
 
       <footer className="mt-16 flex flex-col items-center gap-4 opacity-60 hover:opacity-100 transition-opacity">
-        <img 
-          src="/NOME.png" 
-          alt="VI INTERCE" 
-          className="w-32 h-auto object-contain drop-shadow-md" 
+        <img
+          src="/NOME.png"
+          alt="VI INTERCE"
+          className="w-32 h-auto object-contain drop-shadow-md"
         />
       </footer>
     </>
@@ -2939,6 +3586,14 @@ export default function Home() {
     if (error) {
       toast('E-mail ou senha inválidos', 'error');
     } else if (data.user) {
+      // 🚨 SEQUESTRO DE CONTA ZERADA
+      if (password === 'med123') {
+        sessionStorage.setItem('lock_to_redefinir', 'true');
+        router.push('/redefinir');
+        setLoading(false);
+        return;
+      }
+
       const { data: profile } = await supabase.from('profiles').select('id').eq('id', data.user.id).single();
       // 💉 CIRURGIA FEITA AQUI:
       router.push(profile ? '/triagem' : '/perfil/criar');
@@ -2960,14 +3615,14 @@ export default function Home() {
 
       {/* 💻 DESKTOP (Com a Logo Centralizada no Background) */}
       <div className="hidden md:flex min-h-screen relative z-10">
-        
+
         {/* 💉 LADO ESQUERDO: Ocupa o espaço do fundo e centraliza o LOGO.png */}
-        <div className="flex-1 flex flex-col items-center justify-center p-20 animate-in fade-in zoom-in duration-1000">
-           <img 
-            src="/LOGO.png" 
-            alt="Logo Match Med" 
-            className="max-w-md lg:max-w-lg h-auto object-contain drop-shadow-[0_0_50px_rgba(234,88,12,0.2)]" 
-           />
+        <div className="flex-1 w-full bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans selection:bg-orange-500/30">
+          <img
+            src="/LOGO.png"
+            alt="Logo Match Med"
+            className="max-w-md lg:max-w-lg h-auto object-contain drop-shadow-[0_0_50px_rgba(234,88,12,0.2)]"
+          />
         </div>
 
         {/* BARRA LATERAL COM O LOGIN (Liquid Glass) */}
@@ -2989,45 +3644,12 @@ import { useRouter } from 'next/navigation';
 import { Camera, ArrowLeft, Loader2, AtSign, ChevronDown } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 
-// Importe o helper no topo do arquivo
-import { otimizarUrlCloudinary } from '../../../lib/cloudinary';
+import { otimizarUrlCloudinary, CLOUDINARY_URL } from '../../../lib/cloudinary';
+// CIRURGIA APLICADA: Importando o CachedImage
+import CachedImage from '../../components/CachedImage';
 
-// ─── DADOS DAS ATLÉTICAS (igual ao onboarding) ────────────────────────────────
-const ATLETICAS = {
-  '1ª Divisão': [
-    { nome: 'Alcateia',     curso: 'Medicina', instituicao: 'UFC Sobral' },
-    { nome: 'Audácia',      curso: 'Medicina', instituicao: 'Unichristus' },
-    { nome: 'Espartana',    curso: 'Medicina', instituicao: 'IDOMED Juazeiro' },
-    { nome: 'Fulminante',   curso: 'Medicina', instituicao: 'UECE' },
-    { nome: 'Ira',          curso: 'Medicina', instituicao: 'UNINTA Sobral' },
-    { nome: 'Kariris',      curso: 'Medicina', instituicao: 'UFCA Barbalha' },
-    { nome: 'Selvagem',     curso: 'Medicina', instituicao: 'UFC Fortaleza' },
-    { nome: 'Tenebrosa',    curso: 'Medicina', instituicao: 'UNIFOR' },
-  ],
-  '2ª Divisão': [
-    { nome: 'Invocada',     curso: 'Medicina', instituicao: 'IDOMED Quixadá' },
-    { nome: 'Caçadora',     curso: 'Medicina', instituicao: 'UECE Crateús' },
-    { nome: 'Perversa',     curso: 'Medicina', instituicao: 'UNINTA Itapipoca' },
-    { nome: 'Aniquiladora', curso: 'Medicina', instituicao: 'IDOMED Iguatu' },
-  ],
-  'Convidadas': [
-    { nome: 'Voraz',         curso: 'Medicina', instituicao: 'F5  Sobral' },
-    { nome: 'Tirana',        curso: 'Medicina', instituicao: 'UECE Quixeramobim' },
-    { nome: 'Exterminadora', curso: 'Medicina', instituicao: 'URCA Cariri' },
-  ],
-} as const;
-
-const TODAS_ATLETICAS = Object.values(ATLETICAS).flat();
-
-const CARGOS = [
-  'Presidente',
-  'Diretor',
-  'Organizador',
-  'Técnico',
-  'Esportista / Jogador',
-  'Egresso',
-  'Acadêmico',
-];
+// ─── DADOS DAS ATLÉTICAS ────────────────────────────────
+import { ATLETICAS, TODAS_ATLETICAS, CARGOS } from '../../../lib/constants';
 
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
 type FormData = {
@@ -3044,7 +3666,6 @@ type FormData = {
   ver_nb: boolean;
   mostrar_curso: boolean;
   mostrar_orientacao: boolean;
-  // Novas colunas
   tipo_participante: 'atletica' | 'convidado' | string;
   atletica: string;
   cargo_atletica: string;
@@ -3090,7 +3711,8 @@ const LiveCard = memo(function LiveCard({ f, completion }: { f: FormData; comple
         <CompletionRing pct={completion} />
         <div className="absolute inset-[12px] rounded-full overflow-hidden bg-zinc-900 border border-white/10 shadow-2xl">
           {f.foto_url ? (
-            <img src={f.foto_url} alt="foto" className="w-full h-full object-cover" />
+            /* CIRURGIA APLICADA: Substituído img por CachedImage */
+            <CachedImage src={f.foto_url} alt="foto" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-white/5"><Camera size={32} /></div>
           )}
@@ -3181,7 +3803,6 @@ export default function EditarPerfil() {
 
   const isAtletica = f.tipo_participante === 'atletica';
 
-  // Quando muda a atlética, preenche curso e instituição automaticamente
   const handleAtletica = (nome: string) => {
     const info = TODAS_ATLETICAS.find(a => a.nome === nome);
     set('atletica', nome);
@@ -3224,7 +3845,6 @@ export default function EditarPerfil() {
     return () => { isMounted = false; };
   }, []);
 
-  // ─── UPLOAD COM COMPRESSÃO CLIENT-SIDE ──────────────────────────
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
@@ -3242,10 +3862,7 @@ export default function EditarPerfil() {
       formData.append('file', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
       formData.append('upload_preset', 'intermatch_fotos');
 
-      const cloudName = 'dcsiucytm';
-      const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-
-      const response = await fetch(url, {
+      const response = await fetch(CLOUDINARY_URL, {
         method: 'POST',
         body: formData,
       });
@@ -3255,10 +3872,7 @@ export default function EditarPerfil() {
       }
 
       const data = await response.json();
-
-      // <--- AQUI A MÁGICA FOI APLICADA --->
       const urlOtimizada = otimizarUrlCloudinary(data.secure_url);
-
       set('foto_url', urlOtimizada);
 
     } catch (err: any) {
@@ -3309,7 +3923,6 @@ export default function EditarPerfil() {
 
       <div className="h-[100dvh] w-full overflow-y-auto relative scroll-smooth selection:bg-orange-500/30">
 
-        {/* Header */}
         <div className="sticky top-0 z-30 flex items-center justify-between px-6 py-5 border-b border-white/5"
           style={{ background: 'rgba(15, 5, 26, 0.8)', backdropFilter: 'blur(20px)' }}>
           <div className="w-full max-w-6xl mx-auto flex items-center justify-between">
@@ -3326,20 +3939,13 @@ export default function EditarPerfil() {
         </div>
 
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row">
-
-          {/* Live preview */}
           <aside className="md:sticky md:top-[73px] md:h-[calc(100vh-73px)] w-full md:w-[380px] flex flex-col items-center justify-center py-12 px-6 border-b border-white/5 md:border-b-0 md:border-r border-white/5 bg-white/[0.01]">
             <LiveCard f={f} completion={completion} />
           </aside>
 
-          {/* Form */}
           <div className="flex-1 w-full px-6 md:px-16 py-12 max-w-2xl mx-auto">
-
-            {/* ── Participação ── */}
             <Section title="Participação">
               <div className="flex flex-col gap-3">
-
-                {/* Tipo de participante */}
                 <Field label="Você é">
                   <div className="flex gap-2">
                     {[
@@ -3357,7 +3963,6 @@ export default function EditarPerfil() {
                   </div>
                 </Field>
 
-                {/* Atlética + cargo (só se for membro) */}
                 {isAtletica && (
                   <>
                     <Field label="Atlética">
@@ -3395,7 +4000,6 @@ export default function EditarPerfil() {
                   </>
                 )}
 
-                {/* Tipo de participação (para todos) */}
                 {f.tipo_participante && (
                   <Field label="Participação no Evento">
                     <div className="flex gap-2">
@@ -3420,7 +4024,6 @@ export default function EditarPerfil() {
               </div>
             </Section>
 
-            {/* ── Identidade ── */}
             <Section title="Identidade">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
                 <div className="md:col-span-2">
@@ -3446,6 +4049,8 @@ export default function EditarPerfil() {
                         <option value="Hétero">Hétero</option>
                         <option value="Bi">Bi</option>
                         <option value="Gay">Gay</option>
+                        <option value="Lésbica">Lésbica</option>
+                        <option value="Pan">Pan</option>
                       </select>
                       <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
                     </div>
@@ -3455,7 +4060,6 @@ export default function EditarPerfil() {
               </div>
             </Section>
 
-            {/* ── Acadêmico ── só editável para convidados; atlética é preenchido auto ── */}
             <Section title="Acadêmico">
               {isAtletica ? (
                 <>
@@ -3479,7 +4083,6 @@ export default function EditarPerfil() {
               <Toggle label="Mostrar curso e facul" checked={f.mostrar_curso} onChange={(val) => set('mostrar_curso', val)} />
             </Section>
 
-            {/* ── Fotografia ── */}
             <Section title="Fotografia">
               <input type="file" ref={fileInputRef} onChange={handleUpload} accept="image/*" className="hidden" />
               <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
@@ -3487,7 +4090,8 @@ export default function EditarPerfil() {
                 {f.foto_url ? (
                   <>
                     <div className="w-20 h-20 rounded-2xl overflow-hidden ring-1 ring-white/10 group-hover:ring-orange-500/50">
-                      <img src={f.foto_url} className="w-full h-full object-cover" alt="foto" />
+                      {/* CIRURGIA APLICADA: Substituído img por CachedImage */}
+                      <CachedImage src={f.foto_url} alt="foto" className="w-full h-full object-cover" />
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-widest text-white/20 group-hover:text-orange-500">Trocar Imagem</span>
                   </>
@@ -3502,8 +4106,7 @@ export default function EditarPerfil() {
               </button>
             </Section>
 
-            {/* ── Radar de Plantão ── */}
-            <Section title="Radar de Plantão">
+            <Section title="Quem você quer ver? 👀">
               <div className="flex gap-2">
                 {[
                   { key: 'ver_homem', label: 'Homens', sym: '♂' },
@@ -3522,7 +4125,6 @@ export default function EditarPerfil() {
               </div>
             </Section>
 
-            {/* ── Instagram ── */}
             <Section title="Instagram">
               <div className="flex items-center gap-3 bg-black/60  border border-white/10 rounded-xl px-4 py-4 focus-within:border-orange-500/50 transition-all">
                 <AtSign size={16} className="text-white/20" />
@@ -3535,7 +4137,6 @@ export default function EditarPerfil() {
           </div>
         </div>
 
-        {/* Floating Save Button (Mobile) */}
         <div className="md:hidden fixed bottom-8 left-6 right-6 z-40">
           <button onClick={salvar} disabled={loading || saved}
             className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-2xl ${saved ? 'bg-green-500 text-white' : 'bg-orange-500 text-white shadow-orange-500/20'}`}>
@@ -3551,15 +4152,16 @@ export default function EditarPerfil() {
 <file path="app/triagem/page.tsx">
 'use client';
 
-import { useState, useEffect, Suspense, useCallback } from 'react';
-// 💉 CIRURGIA 1: Removido o import chato do 'next/image'
+import { useState, useEffect, Suspense, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { X, Heart, User, AtSign, RotateCcw } from 'lucide-react';
+import { X, Heart, User, AtSign, RotateCcw, AlertTriangle, Undo2 } from 'lucide-react';
+import CachedImage from '../components/CachedImage';
+import { preloadBatch } from '../../lib/photo-cache';
 
 export const dynamic = 'force-dynamic';
 
-function MatchesContent() {
+function TriagemContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showToast, setShowToast] = useState(false);
@@ -3567,6 +4169,7 @@ function MatchesContent() {
   const [indiceAtual, setIndiceAtual] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [profileToReport, setProfileToReport] = useState<any>(null);
 
   const carregarPerfis = useCallback(async () => {
     try {
@@ -3577,21 +4180,57 @@ function MatchesContent() {
       const { data: meuPerfil } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       if (!meuPerfil) { router.push('/perfil'); return; }
 
+      // FANTASMA DA ÓPERA: Infrator só vai enxergar o vazio para sempre, se frustrar e parar de usar o app
+      if (meuPerfil.is_banned === true) {
+        const fakePerfis: any = [];
+        fakePerfis._meu_is_banned = true;
+        setPerfis(fakePerfis);
+        setLoading(false);
+        return;
+      }
+
       const { data: meusVotos } = await supabase.from('likes').select('receiver_id').eq('sender_id', user.id);
       const idsVotados = meusVotos?.map(v => v.receiver_id) || [];
 
-      const { data: outrosPerfis } = await supabase.from('profiles').select('*').neq('id', user.id);
+      let query = supabase
+        .from('profiles')
+        .select('id, nome, idade, genero, orientacao, atletica, cargo_atletica, curso, instituicao, insta, foto_url, tipo_participacao, mostrar_orientacao, mostrar_curso')
+        .neq('id', user.id)
+        .neq('is_banned', true);
+
+      // Filtro de gênero cruzado (o outro precisa querer ver meu gênero)
+      if (meuPerfil.genero === 'Homem') query = query.eq('ver_homem', true);
+      else if (meuPerfil.genero === 'Mulher') query = query.eq('ver_mulher', true);
+      else if (meuPerfil.genero === 'Não Binário') query = query.eq('ver_nb', true);
+
+      // Filtro de gênero (eu preciso querer ver o gênero do outro)
+      let genderFilter = [];
+      if (meuPerfil.ver_homem) genderFilter.push('genero.eq.Homem');
+      if (meuPerfil.ver_mulher) genderFilter.push('genero.eq.Mulher');
+      if (meuPerfil.ver_nb) genderFilter.push('genero.eq.Não Binário');
+
+      if (genderFilter.length > 0) {
+        query = query.or(genderFilter.join(','));
+      } else {
+        setPerfis([]);
+        setLoading(false);
+        return;
+      }
+
+      if (idsVotados.length > 0) {
+        // Envia todos os IDs já votados para exclusão (evita perfis repetidos)
+        query = query.not('id', 'in', `(${idsVotados.join(',')})`);
+      }
+
+      // Baixamos apenas um "batch" para economizar memória e banda na Vercel / Supabase
+      query = query.limit(30);
+
+      const { data: outrosPerfis } = await query;
 
       if (outrosPerfis) {
-        let perfisFiltrados = outrosPerfis.filter(p => !idsVotados.includes(p.id));
-        perfisFiltrados = perfisFiltrados.filter(p => {
-          const eu = meuPerfil;
-          const outro = p;
-          const euQueroVerOutro = (outro.genero === 'Homem' && eu.ver_homem) || (outro.genero === 'Mulher' && eu.ver_mulher) || (outro.genero === 'Não Binário' && eu.ver_nb);
-          const outroQuerMeVer = (eu.genero === 'Homem' && outro.ver_homem) || (eu.genero === 'Mulher' && outro.ver_mulher) || (eu.genero === 'Não Binário' && outro.ver_nb);
-          return euQueroVerOutro && outroQuerMeVer;
-        });
-        setPerfis(perfisFiltrados);
+        setPerfis(outrosPerfis);
+        // 🔥 Carrega apenas a primeira "fornada" de fotos
+        preloadBatch(outrosPerfis.slice(0, 5).map((p: any) => p.foto_url).filter(Boolean));
       }
     } catch (error) { console.error('Erro:', error); } finally { setLoading(false); }
   }, [router]);
@@ -3606,17 +4245,86 @@ function MatchesContent() {
     return () => { if (timeoutId) clearTimeout(timeoutId); };
   }, [searchParams, carregarPerfis]);
 
+  // 💉 Motor de Preload Contínuo (Janela Deslizante)
+  // Conforme o usuário vota, vai baixando as próximas 3 fotos silenciosamente
+  useEffect(() => {
+    if (perfis.length > 0 && indiceAtual < perfis.length) {
+      // Pega um "recorte" seguro logo à frente de onde o usuário está
+      const proximasFotos = perfis
+        .slice(indiceAtual, indiceAtual + 3)
+        .map(p => p.foto_url)
+        .filter(Boolean);
+        
+      preloadBatch(proximasFotos);
+    }
+  }, [indiceAtual, perfis]);
+
+  const votando = useRef(false);
+
   const votar = async (liked: boolean) => {
+    if (votando.current) return;
+    votando.current = true;
+    
     const perfilAtual = perfis[indiceAtual];
-    if (!perfilAtual) return;
+    if (!perfilAtual) {
+      votando.current = false;
+      return;
+    }
     setFlipped(false);
     setIndiceAtual(prev => prev + 1);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
       const user = session.user;
-      await supabase.from('likes').insert({ sender_id: user.id, receiver_id: perfilAtual.id, liked });
-    } catch (error) { console.error('Erro ao votar:', error); }
+      await supabase.from('likes').upsert({ sender_id: user.id, receiver_id: perfilAtual.id, liked });
+    } catch (error) { 
+      console.error('Erro ao votar:', error); 
+    } finally {
+      votando.current = false;
+    }
+  };
+
+  const confirmarDenuncia = async () => {
+    if (!profileToReport) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { error } = await supabase.from('reports').insert({
+          reporter_id: session.user.id,
+          reported_id: profileToReport.id
+        });
+        
+        if (error) console.error('Erro ao salvar denúncia:', error);
+      }
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+    }
+    setProfileToReport(null);
+    votar(false); // Pula o perfil
+  };
+
+  const desfazerVoto = async () => {
+    if (indiceAtual === 0) return;
+    const previousIndex = indiceAtual - 1;
+    const perfilAnterior = perfis[previousIndex];
+    if (!perfilAnterior) return;
+
+    // Volta imediatamente na UI
+    setIndiceAtual(previousIndex);
+    setFlipped(false);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      // Apaga o like/dislike dado para esse destinatário
+      await supabase
+        .from('likes')
+        .delete()
+        .match({ sender_id: session.user.id, receiver_id: perfilAnterior.id });
+    } catch (error) {
+      console.error('Erro ao desfazer voto:', error);
+    }
   };
 
   if (loading) return (
@@ -3625,14 +4333,16 @@ function MatchesContent() {
     </div>
   );
 
-  const p = perfis[indiceAtual];
+  const p = perfis[indiceAtual] || null;
+  const isAlcateia = p?.atletica?.trim().toUpperCase().replace('É', 'E') === 'ALCATEIA';
 
   return (
     <>
       <div className="fixed inset-0 bg-[#0f051a] -z-20 pointer-events-none" />
+      
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100dvh] h-[100vw] md:w-[100vw] md:h-[100dvh] bg-[url('/padrao_pb.webp')] bg-cover bg-center bg-no-repeat opacity-[0.03] rotate-90 md:rotate-0 -z-10 pointer-events-none" />
 
-      <main className="relative flex min-h-[100dvh] flex-col items-center pt-4 pb-40 px-6 overflow-x-hidden">
+      <main className="flex-1 w-full flex flex-col justify-center items-center px-6 pt-4 pb-28 overflow-hidden">
 
         {showToast && (
           <div className="fixed top-4 z-[100] animate-in slide-in-from-top duration-500 bg-orange-500 text-white px-6 py-3 rounded-full shadow-2xl border border-white/20 font-black italic uppercase text-[10px] tracking-widest">
@@ -3659,19 +4369,33 @@ function MatchesContent() {
 
                 {/* ── FRENTE ── */}
                 <div
-                  className="w-full bg-[#1a1a1a] backdrop-blur-2xl rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] overflow-hidden border border-white/10 flex flex-col"
-                  style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+                  className={`w-full bg-[#1a1a1a] backdrop-blur-2xl rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] overflow-hidden border flex flex-col relative transition-all ${isAlcateia ? 'border-orange-500/50 shadow-[0_0_30px_rgba(249,115,22,0.3)] ring-1 ring-orange-500/20' : 'border-white/10'}`}
+                  style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'translateZ(0)' }}
                 >
+                  {isAlcateia && (
+                    <div className="absolute top-4 left-4 z-50 pointer-events-none">
+                      <img src="/alcateia.png" alt="Selo Alcateia" className="w-16 h-16 object-contain drop-shadow-[0_4px_4px_rgba(0,0,0,0.6)]" />
+                    </div>
+                  )}
+
+                  {!isAlcateia && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setProfileToReport(p); }} 
+                      className="absolute top-4 left-4 z-50 w-10 h-10 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-white/60 hover:bg-red-500/80 hover:border-red-500 hover:text-white active:scale-90 transition-all pointer-events-auto"
+                    >
+                      <AlertTriangle size={18} />
+                    </button>
+                  )}
+                  
                   <div className="w-full aspect-[4/5] bg-zinc-900 relative">
                     {p.foto_url ? (
-                      /* 💉 CIRURGIA 2: Substituído o <Image /> do Next por um <img> padrão */
-                      <img src={p.foto_url} alt={p.nome} className="w-full h-full object-cover absolute inset-0" />
+                      /* CIRURGIA APLICADA: Substituído img por CachedImage na FRENTE */
+                      <CachedImage src={p.foto_url} alt={p.nome} className="w-full h-full object-cover absolute inset-0" />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-white/5 absolute inset-0">
                         <User size={100} />
                       </div>
                     )}
-                    {/* Degradê que morre no fundo do card */}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
 
                     <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 flex items-center gap-2">
@@ -3679,10 +4403,11 @@ function MatchesContent() {
                       <span className="text-[10px] font-black uppercase tracking-widest text-white/70">Ver mais</span>
                     </div>
 
-                    {/* Informações movidas mais para baixo (bottom-2) */}
-                    <div className="absolute bottom-2 left-6 right-6 flex flex-col gap-1.5">
-                      <h2 className="text-3xl font-black text-white italic drop-shadow-md leading-none uppercase tracking-tight">
-                        {p.nome}, {p.idade}
+                    <div className="absolute bottom-2 left-6 right-6 flex flex-col gap-1.5 z-10">
+                      <h2 className="text-3xl font-black italic leading-none uppercase tracking-tight flex items-center gap-2">
+                        <span className={isAlcateia ? "bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent [-webkit-text-stroke:0.5px_rgba(255,255,255,0.7)]" : "text-white"}>
+                          {p.nome}, {p.idade}
+                        </span>
                       </h2>
                       {p.mostrar_curso && (p.curso || p.instituicao) && (
                         <p className="text-orange-400 font-black uppercase text-[11px] tracking-[0.15em] leading-none">
@@ -3709,48 +4434,96 @@ function MatchesContent() {
                     </div>
                   </div>
 
-                  {/* Barra inferior incorporada com botões levemente reduzidos */}
-                  <div className="pt-3 pb-7 flex justify-center items-center gap-6" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => votar(false)} className="w-14 h-14 bg-white/5 backdrop-blur-md border border-red-500/40 rounded-full flex items-center justify-center text-red-500 hover:bg-red-500/20 active:scale-90 transition-all">
-                      <X size={28} strokeWidth={2.5} />
+                  <div className="pt-3 pb-7 px-8 flex justify-center items-center gap-4 w-full relative" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => votar(false)} className="w-[4.5rem] h-[4.5rem] bg-white/5 shrink-0 backdrop-blur-md border border-red-500/40 rounded-full flex items-center justify-center text-red-500 hover:bg-red-500/20 active:scale-90 transition-all">
+                      <X size={36} strokeWidth={2.5} />
                     </button>
-                    <button onClick={() => votar(true)} className="w-18 h-18 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-[0_10px_40px_rgba(234,88,12,0.4)] hover:bg-orange-400 active:scale-90 transition-all border border-orange-400/50">
+                    
+                    <button 
+                      onClick={desfazerVoto} 
+                      disabled={indiceAtual === 0}
+                      className={`w-12 h-12 rounded-full shrink-0 flex items-center justify-center transition-all ${
+                        indiceAtual > 0 
+                          ? 'bg-white/5 backdrop-blur-md border border-yellow-500/40 text-yellow-500 hover:bg-yellow-500/20 active:scale-90' 
+                          : 'bg-white/5 border-white/10 text-white/20 cursor-not-allowed'
+                      }`}
+                    >
+                      <Undo2 size={24} strokeWidth={2.5} />
+                    </button>
+
+                    <button 
+                      onClick={(e) => { 
+                        if (!p.insta) return;
+                        e.stopPropagation(); 
+                        window.open(`https://instagram.com/${p.insta.replace('@', '')}`, '_blank'); 
+                      }} 
+                      disabled={!p.insta}
+                      className={`w-12 h-12 rounded-full shrink-0 flex items-center justify-center transition-all ${
+                        p.insta 
+                          ? 'bg-white/5 backdrop-blur-md border border-pink-500/40 text-pink-500 hover:bg-pink-500/20 active:scale-90' 
+                          : 'bg-white/5 border-white/10 text-white/20 cursor-not-allowed'
+                      }`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                        <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                      </svg>
+                    </button>
+                    
+                    <button onClick={() => votar(true)} className="w-[4.5rem] h-[4.5rem] shrink-0 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-[0_10px_40px_rgba(234,88,12,0.4)] hover:bg-orange-400 active:scale-90 transition-all border border-orange-400/50">
                       <Heart size={36} fill="currentColor" />
                     </button>
                   </div>
                 </div>
 
-                {/* ── VERSO (MANTIDO EXATAMENTE IGUAL) ── */}
+                {/* ── VERSO ── */}
                 <div
-                  className="absolute inset-0 w-full bg-[#130826] backdrop-blur-2xl rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-white/10 flex flex-col"
+                  className={`absolute inset-0 w-full bg-[#130826] backdrop-blur-2xl rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border flex flex-col overflow-hidden transition-all ${isAlcateia ? 'border-orange-500/50 ring-1 ring-orange-500/20' : 'border-white/10'}`}
                   style={{
                     backfaceVisibility: 'hidden',
                     WebkitBackfaceVisibility: 'hidden',
                     transform: 'rotateY(180deg)',
                   }}
                 >
-                  {/* Topo */}
-                  <div className="flex items-center gap-4 px-7 pt-7 pb-5 border-b border-white/5">
+                  {isAlcateia && (
+                    <div className="absolute bottom-[8.5rem] right-8 z-[60] pointer-events-none opacity-80">
+                      <img src="/alcateia.png" alt="Selo Alcateia" className="w-16 h-16 object-contain drop-shadow-[0_4px_4px_rgba(0,0,0,0.6)]" />
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-4 px-7 pt-7 pb-5 border-b border-white/5 relative z-10">
                     <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 shrink-0 bg-zinc-900">
                       {p.foto_url
-                        ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" />
+                        ? <CachedImage src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" /> /* CIRURGIA APLICADA NO VERSO */
                         : <div className="w-full h-full flex items-center justify-center text-white/10"><User size={24} /></div>
                       }
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-black italic uppercase text-xl leading-none truncate">{p.nome}, {p.idade}</h3>
+                    <div className="flex-1 min-w-0 pr-8">
+                      <h3 className={`font-black italic uppercase text-xl leading-none truncate ${isAlcateia ? "bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent [-webkit-text-stroke:0.5px_rgba(255,255,255,0.7)]" : "text-white"}`}>
+                        {p.nome}, {p.idade}
+                      </h3>
                       {p.mostrar_curso && (p.curso || p.instituicao) && (
                         <p className="text-orange-400 text-[11px] font-black uppercase tracking-widest mt-1 truncate">
                           {[p.curso, p.instituicao].filter(Boolean).join(' · ')}
                         </p>
                       )}
                     </div>
-                    <div className="bg-white/5 border border-white/10 rounded-full p-2 shrink-0">
-                      <RotateCcw size={13} className="text-orange-400" />
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isAlcateia && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setProfileToReport(p); }}
+                          className="bg-white/5 border border-white/10 rounded-full p-2.5 flex items-center justify-center hover:bg-red-500/20 text-white/40 hover:text-red-500 active:scale-90 transition-all cursor-pointer"
+                        >
+                          <AlertTriangle size={13} />
+                        </button>
+                      )}
+                      <div className="bg-white/5 border border-white/10 rounded-full p-2.5 flex items-center justify-center">
+                        <RotateCcw size={13} className="text-orange-400" />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Infos */}
                   <div className="flex-1 px-7 py-6 flex flex-col gap-5 overflow-y-auto">
 
                     {(p.genero || (p.mostrar_orientacao && p.orientacao)) && (
@@ -3766,7 +4539,7 @@ function MatchesContent() {
                             <span className="bg-orange-500/15 border border-orange-500/20 text-orange-400 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-widest">
                               {p.orientacao}
                             </span>
-                          )}
+                          )} {/* 👈 O ERRO ESTAVA AQUI! O ')}' FOI RECUPERADO */}
                         </div>
                       </div>
                     )}
@@ -3806,12 +4579,44 @@ function MatchesContent() {
                     )}
                   </div>
 
-                  {/* Botões verso */}
-                  <div className="pt-4 pb-8 flex justify-center items-center gap-8" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => votar(false)} className="w-16 h-16 bg-white/5 backdrop-blur-md border border-red-500/40 rounded-full flex items-center justify-center text-red-500 hover:bg-red-500/20 active:scale-90 transition-all">
-                      <X size={32} strokeWidth={2.5} />
+                  <div className="pt-4 pb-8 px-8 flex justify-center items-center gap-5 w-full relative" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => votar(false)} className="w-[4.5rem] h-[4.5rem] bg-white/5 shrink-0 backdrop-blur-md border border-red-500/40 rounded-full flex items-center justify-center text-red-500 hover:bg-red-500/20 active:scale-90 transition-all">
+                      <X size={36} strokeWidth={2.5} />
                     </button>
-                    <button onClick={() => votar(true)} className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-[0_10px_40px_rgba(234,88,12,0.4)] hover:bg-orange-400 active:scale-90 transition-all border border-orange-400/50">
+
+                    <button 
+                      onClick={desfazerVoto} 
+                      disabled={indiceAtual === 0}
+                      className={`w-14 h-14 rounded-full shrink-0 flex items-center justify-center transition-all ${
+                        indiceAtual > 0 
+                          ? 'bg-white/5 backdrop-blur-md border border-yellow-500/40 text-yellow-500 hover:bg-yellow-500/20 active:scale-90' 
+                          : 'bg-white/5 border-white/10 text-white/20 cursor-not-allowed'
+                      }`}
+                    >
+                      <Undo2 size={28} strokeWidth={2.5} />
+                    </button>
+
+                    <button 
+                      onClick={(e) => { 
+                        if (!p.insta) return;
+                        e.stopPropagation(); 
+                        window.open(`https://instagram.com/${p.insta.replace('@', '')}`, '_blank'); 
+                      }} 
+                      disabled={!p.insta}
+                      className={`w-14 h-14 rounded-full shrink-0 flex items-center justify-center transition-all ${
+                        p.insta 
+                          ? 'bg-white/5 backdrop-blur-md border border-pink-500/40 text-pink-500 hover:bg-pink-500/20 active:scale-90' 
+                          : 'bg-white/5 border-white/10 text-white/20 cursor-not-allowed'
+                      }`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                        <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                      </svg>
+                    </button>
+
+                    <button onClick={() => votar(true)} className="w-20 h-20 bg-orange-500 shrink-0 rounded-full flex items-center justify-center text-white shadow-[0_10px_40px_rgba(234,88,12,0.4)] hover:bg-orange-400 active:scale-90 transition-all border border-orange-400/50">
                       <Heart size={40} fill="currentColor" />
                     </button>
                   </div>
@@ -3828,21 +4633,47 @@ function MatchesContent() {
               <p className="text-white/20 font-bold uppercase text-[10px] tracking-widest leading-relaxed">
                 Ninguém novo por aqui... <br /> volte mais tarde! 🚑
               </p>
-              <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-white/10 border border-white/10 rounded-full text-[10px] font-black uppercase text-white/50 hover:text-white transition-colors">
+              <button onClick={() => { setLoading(true); setIndiceAtual(0); carregarPerfis(); }} className="mt-4 px-6 py-2 bg-white/10 border border-white/10 rounded-full text-[10px] font-black uppercase text-white/50 hover:text-white transition-colors">
                 Recarregar
               </button>
             </div>
           </div>
         )}
+
+        {/* ── MODAL DE DENÚNCIA ── */}
+        {profileToReport && (
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/90">
+            <div className="absolute inset-0" onClick={() => setProfileToReport(null)} />
+            <div className="relative w-full max-w-sm bg-[#0f051a] backdrop-blur-xl rounded-[2.5rem] shadow-[0_0_50px_rgba(239,68,68,0.15)] p-8 flex flex-col items-center text-center border border-red-500/20 animate-in zoom-in-95 duration-200">
+              <div className="bg-red-500/20 text-red-500 p-4 rounded-full mb-5 ring-4 ring-red-500/10">
+                <AlertTriangle size={32} />
+              </div>
+              <h3 className="text-2xl font-black italic text-white mb-2 leading-tight uppercase">Atenção!</h3>
+              <p className="text-white/50 text-[11px] uppercase tracking-widest font-bold mb-8 leading-relaxed">
+                Você tem certeza que deseja denunciar <span className="text-white">"{profileToReport.nome}"</span>? <br/><br/>
+                Perfis denunciados serão revisados por nossa equipe e poderão ser excluídos para sempre se quebrarem as regras.
+              </p>
+              <div className="flex flex-col gap-3 w-full">
+                <button onClick={confirmarDenuncia} className="w-full h-14 bg-red-500/20 font-black uppercase tracking-widest text-[11px] rounded-2xl flex items-center justify-center hover:bg-red-500/30 active:scale-95 transition-all border border-red-500/30 text-red-500 shadow-xl shadow-red-500/10">
+                  ⚠️ Sim, quero denunciar
+                </button>
+                <button onClick={() => setProfileToReport(null)} className="w-full h-14 bg-white/5 font-black uppercase tracking-widest text-[11px] rounded-2xl flex items-center justify-center hover:bg-white/10 active:scale-95 transition-all border border-white/10 text-white/50">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
     </>
   );
 }
 
-export default function Matches() {
+export default function Triagem() {
   return (
     <Suspense fallback={<div className="h-screen w-full bg-[#0f051a]" />}>
-      <MatchesContent />
+      <TriagemContent />
     </Suspense>
   );
 }

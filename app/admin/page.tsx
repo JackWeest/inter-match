@@ -19,14 +19,27 @@ export default function AdminPage() {
     const checarSessao = async () => {
       // Auto-Login inteligente se já estiver logado
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.email === 'janiejunior123@gmail.com') {
-        setAutenticado(true);
-        carregarDenuncias(true); // O 'true' pula o setLoading local de denúncias
-      } else {
-        setLoading(false);
+      
+      if (session?.user) {
+        // Consulta no banco se a pessoa é admin
+        const { data: adminCheck } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+
+        if (adminCheck?.is_admin) {
+          setAutenticado(true);
+          carregarDenuncias(true); // O 'true' pula o setLoading local de denúncias
+          return;
+        }
       }
+      
+      setLoading(false);
     };
+    
     checarSessao();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -46,8 +59,14 @@ export default function AdminPage() {
       return;
     }
 
-    // Trava forte no email mestre
-    if (data.user?.email !== 'janiejunior123@gmail.com') {
+    // Trava forte consultando o banco
+    const { data: adminCheck } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', data.user.id)
+      .single();
+
+    if (!adminCheck?.is_admin) {
       await supabase.auth.signOut(); // Desloga do aparelho imediatamente
       toast('Acesso negado: Conta sem privilégios', 'error');
       setLoading(false);

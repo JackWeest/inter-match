@@ -411,6 +411,8 @@ export default function EditarPerfil() {
                         <option value="Hétero">Hétero</option>
                         <option value="Bi">Bi</option>
                         <option value="Gay">Gay</option>
+                        <option value="Lésbica">Lésbica</option>
+                        <option value="Pan">Pan</option>
                       </select>
                       <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
                     </div>
@@ -466,7 +468,7 @@ export default function EditarPerfil() {
               </button>
             </Section>
 
-            <Section title="Radar de Plantão">
+            <Section title="Quem você quer ver? 👀">
               <div className="flex gap-2">
                 {[
                   { key: 'ver_homem', label: 'Homens', sym: '♂' },

@@ -6,7 +6,7 @@ import { Flame, Heart, User } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { createCache } from '../../lib/cache';
 
-const matchCountCache = createCache<number>('match-count', 30_000);
+const matchCountCache = createCache<number>('match-count', 120_000); // 120 segundos
 
 type LucideIconType = React.ComponentType<{
   size?: string | number;
@@ -131,42 +131,24 @@ export default function Navbar() {
     fetchMatchCount();
   }, [pathname]);
 
-  // Supabase Realtime: escuta MUDANÇAS (agora super otimizado e seguro)
+ // Polling inteligente: substitui o Realtime para poupar conexões do Supabase
   useEffect(() => {
     const rotasSemNavbar = ['/', '/ingressar', '/redefinir'];
     if (rotasSemNavbar.includes(pathname)) return;
 
-    let channel: ReturnType<typeof supabase.channel>;
+    // Busca inicial ao montar a navbar
+    fetchMatchCount();
 
-    const setupRealtime = async () => {
-      // 1. Pega a sessão para sabermos o ID do usuário local
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+    // Configura o polling a cada 60 segundos (60000 ms)
+    const intervalId = setInterval(() => {
+      // Só faz a requisição se a tela do celular estiver ligada e no app
+      if (document.visibilityState === 'visible') {
+        matchCountCache.invalidate(); // Invalida o cache pra forçar a busca nova
+        fetchMatchCount();
+      }
+    }, 60000);
 
-      // 2. Abre o canal APENAS para INSERTs onde ele é o "receiver_id". 
-      // O nome do canal agora leva Date.now() para evitar bugs de recarregamento do React (Strict Mode)
-      channel = supabase
-        .channel(`match-count-${Date.now()}`)
-        .on(
-          'postgres_changes',
-          { 
-            event: 'INSERT', 
-            schema: 'public', 
-            table: 'likes',
-            filter: `receiver_id=eq.${session.user.id}` // 👈 MÁGICA DE PROTEÇÃO AQUI
-          },
-          () => {
-            // Só roda isso se ALGUÉM der like NELE
-            matchCountCache.invalidate();
-            fetchMatchCount();
-          }
-        )
-        .subscribe();
-    };
-
-    setupRealtime();
-
-    // Também escuta evento global de match criado (ex: quando ele próprio dá like)
+    // Escuta evento global de match criado (ex: quando ele próprio dá like)
     const onMatchCreated = () => {
       matchCountCache.invalidate();
       fetchMatchCount();
@@ -174,8 +156,8 @@ export default function Navbar() {
     window.addEventListener('match-created', onMatchCreated);
 
     return () => {
-      // Remove o canal de forma segura caso o componente seja desmontado
-      if (channel) supabase.removeChannel(channel);
+      // Limpa a repetição e o evento ao sair do componente
+      clearInterval(intervalId);
       window.removeEventListener('match-created', onMatchCreated);
     };
   }, [pathname]);

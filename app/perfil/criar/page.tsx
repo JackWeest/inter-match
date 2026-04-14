@@ -378,7 +378,7 @@ function StepPerfil({ f, set, onUpload, uploading, fileInputRef }: {
             <Field label="Orientação">
               <div className="relative">
                 <select className={selectCls} value={f.orientacao} onChange={(e) => set('orientacao', e.target.value)}>
-                  <option value="Hétero">Hétero</option><option value="Bi">Bi</option><option value="Gay">Gay</option>
+                  <option value="Hétero">Hétero</option><option value="Lésbica">Lésbica</option><option value="Bi">Bi</option><option value="Gay">Gay</option><option value="Pan">Pan</option>
                 </select>
                 <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
               </div>
@@ -430,7 +430,7 @@ function StepPerfil({ f, set, onUpload, uploading, fileInputRef }: {
         </button>
       </Section>
 
-      <Section title="Radar de Plantão">
+      <Section title="Quem você quer ver? 👀">
         <div className="flex gap-2">
           {[{ key: 'ver_homem', label: 'Homens', sym: '♂' }, { key: 'ver_mulher', label: 'Mulheres', sym: '♀' }, { key: 'ver_nb', label: 'NB', sym: '⚧' }].map(({ key, label, sym }) => {
             const active = f[key as keyof OnboardingData] as boolean;

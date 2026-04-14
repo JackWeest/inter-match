@@ -42,7 +42,7 @@ function TriagemContent() {
 
       let query = supabase
         .from('profiles')
-        .select('*')
+        .select('id, nome, idade, genero, orientacao, atletica, cargo_atletica, curso, instituicao, insta, foto_url, tipo_participacao, mostrar_orientacao, mostrar_curso')
         .neq('id', user.id)
         .neq('is_banned', true);
 
@@ -77,7 +77,8 @@ function TriagemContent() {
 
       if (outrosPerfis) {
         setPerfis(outrosPerfis);
-        preloadBatch(outrosPerfis.map((p: any) => p.foto_url).filter(Boolean));
+        // 🔥 Carrega apenas a primeira "fornada" de fotos
+        preloadBatch(outrosPerfis.slice(0, 5).map((p: any) => p.foto_url).filter(Boolean));
       }
     } catch (error) { console.error('Erro:', error); } finally { setLoading(false); }
   }, [router]);
@@ -91,6 +92,20 @@ function TriagemContent() {
     carregarPerfis();
     return () => { if (timeoutId) clearTimeout(timeoutId); };
   }, [searchParams, carregarPerfis]);
+
+  // 💉 Motor de Preload Contínuo (Janela Deslizante)
+  // Conforme o usuário vota, vai baixando as próximas 3 fotos silenciosamente
+  useEffect(() => {
+    if (perfis.length > 0 && indiceAtual < perfis.length) {
+      // Pega um "recorte" seguro logo à frente de onde o usuário está
+      const proximasFotos = perfis
+        .slice(indiceAtual, indiceAtual + 3)
+        .map(p => p.foto_url)
+        .filter(Boolean);
+        
+      preloadBatch(proximasFotos);
+    }
+  }, [indiceAtual, perfis]);
 
   const votando = useRef(false);
 

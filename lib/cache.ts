@@ -1,29 +1,44 @@
 /**
- * Cache simples em memÃ³ria por sessÃ£o.
- * Evita re-fetch desnecessÃ¡rio ao navegar entre pÃ¡ginas.
- * TTL padrÃ£o: 120s (configurÃ¡vel na criaÃ§Ã£o).
+ * Cache persistente por sessão via sessionStorage.
+ * Sobrevive a reloads (F5), mas limpa quando a aba fecha.
+ * Protegido contra SSR (Next.js) e erros de parse.
  */
-type CacheEntry<T> = {
-  data: T;
-  expiresAt: number;
-};
-
-const store: Record<string, CacheEntry<unknown>> = {};
-
 export function createCache<T>(key: string, ttlMs: number) {
+  // Verificação de segurança para não quebrar no servidor do Next.js
+  const isBrowser = typeof window !== 'undefined';
+
   return {
     get(): T | null {
-      const entry = store[key];
-      if (entry && entry.expiresAt > Date.now()) return entry.data as T;
-      // expirado ou nÃ£o existe
-      if (entry) delete store[key];
-      return null;
+      if (!isBrowser) return null;
+      try {
+        const item = sessionStorage.getItem(key);
+        if (!item) return null;
+        
+        const entry = JSON.parse(item) as { data: T; expiresAt: number };
+        
+        if (entry.expiresAt > Date.now()) {
+          return entry.data;
+        }
+        
+        // Expirou: faz a limpeza
+        sessionStorage.removeItem(key);
+        return null;
+      } catch {
+        return null; // Falha no parse de JSON, ignora e busca novo
+      }
     },
     set(data: T) {
-      store[key] = { data, expiresAt: Date.now() + ttlMs };
+      if (!isBrowser) return;
+      try {
+        const entry = { data, expiresAt: Date.now() + ttlMs };
+        sessionStorage.setItem(key, JSON.stringify(entry));
+      } catch (err) {
+        // Silencioso. Pode falhar se o sessionStorage estourar limite de tamanho (raro)
+      }
     },
     invalidate() {
-      delete store[key];
+      if (!isBrowser) return;
+      sessionStorage.removeItem(key);
     },
   };
 }
