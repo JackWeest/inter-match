@@ -223,7 +223,7 @@ export default function AdminPage() {
             </div>
           </div>
           <button 
-            onClick={carregarDenuncias}
+            onClick={() => carregarDenuncias()}
             disabled={loading}
             className="flex items-center gap-2 bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-white/70 px-5 py-3 rounded-full text-[10px] uppercase font-black tracking-widest border border-white/10"
           >
