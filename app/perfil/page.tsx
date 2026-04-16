@@ -44,7 +44,11 @@ export default function PreviewPerfil() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from('profiles').delete().eq('id', user.id);
+        // CIRURGIA APLICADA: Em vez de apagar só o 'profiles', invoca o RPC para apagar a conta raiz
+        const { error } = await supabase.rpc('delete_my_account');
+        
+        if (error) throw error;
+
         await supabase.auth.signOut();
         setShowDeleteModal(false);
         router.push('/');
